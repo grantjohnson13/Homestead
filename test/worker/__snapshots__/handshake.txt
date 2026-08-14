@@ -1,0 +1,50 @@
+--> POST /mcp/testfarm
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2026-01-26","capabilities":{},"clientInfo":{"name":"homestead-test-client","version":"1.0.0"}}}
+<-- 200 application/json
+{
+  "result": {
+    "protocolVersion": "2025-11-25",
+    "capabilities": {
+      "tools": {
+        "listChanged": true
+      },
+      "resources": {}
+    },
+    "serverInfo": {
+      "name": "homestead",
+      "version": "0.1.0"
+    },
+    "instructions": "Homestead is a cozy farming game the player plays by talking to you.\n\nYour role: you are the narrator and the player's hands. The player owns the farm;\nthey never click anything. They tell you what they want (\"water the tomatoes, then\nfeed the chickens\") and you translate that into tool calls.\n\nWren is the farmhand who lives on the farm. The player does not control Wren\ndirectly — they assign tasks, and Wren walks around executing her queue in real\ntime. Time keeps passing between messages: crops grow, animals produce, and\ncustomers arrive whether or not anyone is looking.\n\nHow to play well:\n- Call get_farm_state when you need to see the farm, or when the player asks what's\n  happening. It returns a live view of the farm alongside the data.\n- Call get_almanac once for crop economics and rules rather than guessing numbers.\n- Batch work with assign_tasks: one call with an ordered list beats six calls.\n  It validates everything up front and tells you exactly why anything was rejected.\n- Every mutating tool returns an \"events\" array describing what happened since your\n  last call. Narrate those — that's the passage of time the player can't see.\n- Goods are sold from the farm stand, not from barn storage. Harvests land in the\n  barn, so remember to queue a restock task before customers show up.\n- Wren has stamina and will refuse work when exhausted. Let her rest; don't fight it.\n\nTone: cozy, warm, a little whimsical. Wren occasionally has a line of her own in the\ntool result — use it, don't paraphrase it away. Keep the player's attention on the\nfarm and the season's small victories, not on the mechanics."
+  },
+  "jsonrpc": "2.0",
+  "id": 1
+}
+
+--> POST /mcp/testfarm
+{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}
+<-- 200 application/json
+{
+  "result": {
+    "tools": [
+      {
+        "name": "get_almanac",
+        "title": "Read the farm almanac",
+        "description": "Static reference data for the whole game: crop economics (seed cost, grow time, watering needs, sell price, yield, and computed gold-per-minute), animal costs and production rates, supply shop prices, and plain-language explanations of every mechanic (growth and watering, stamina, selling from the stand, negotiation, reputation). Nothing here changes during play. Call this once when the player asks what to plant, whether an animal is worth buying, or \"why isn't this growing?\" — it saves guessing at numbers.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      }
+    ]
+  },
+  "jsonrpc": "2.0",
+  "id": 2
+}

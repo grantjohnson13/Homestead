@@ -1,0 +1,37 @@
+{
+  "name": "homestead",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "An MCP-native farming game played entirely through conversation with Claude.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:ui": "node --experimental-strip-types scripts/build-ui.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src test scripts --ext .ts",
+    "format": "prettier --write \"**/*.{ts,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,json,md}\"",
+    "dev": "wrangler dev",
+    "deploy": "npm run build:ui && wrangler deploy"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "1.7.5",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.21.3",
+    "@cloudflare/workers-types": "^5.20260814.1",
+    "@types/node": "^22.10.5",
+    "eslint": "^9.18.0",
+    "prettier": "^3.4.2",
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.67.0",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.123.0"
+  }
+}

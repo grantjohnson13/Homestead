@@ -1,0 +1,98 @@
+/**
+ * Every tunable number in one place. M6's balance pass edits this file and
+ * `data/crops.ts` — nothing else.
+ *
+ * The sim's atomic unit is one tick = one game-minute. One real second is one
+ * game-minute, and the Durable Object alarm advances 5 ticks at a time.
+ */
+
+export const TICKS_PER_ALARM = 5;
+export const REAL_MS_PER_TICK = 1000;
+
+/** Wren's stamina economy. */
+export const STAMINA = {
+  max: 100,
+  /** Drained per tick of actual work (not walking). */
+  workDrainPerTick: 1.6,
+  /** Drained per tick of walking. */
+  walkDrainPerTick: 0.4,
+  /** Recovered per tick while idle at the farmhouse. */
+  restRecoverPerTick: 2.2,
+  /** Recovered per tick while idle anywhere else. */
+  idleRecoverPerTick: 0.8,
+  /** Below this she refuses to start new work. */
+  refuseBelow: 8,
+  /** She will not accept work again until rested back to here. */
+  resumeAt: 30,
+} as const;
+
+/** How long each task's *work* phase takes, in ticks, once Wren has arrived. */
+export const TASK_WORK_TICKS = {
+  till: 3,
+  plant: 2,
+  water: 2,
+  harvest: 3,
+  feed: 2,
+  collect: 2,
+  restock: 3,
+  pet: 2,
+  idle: 1,
+} as const;
+
+/** Wren walks one tile per tick. */
+export const TICKS_PER_TILE = 1;
+
+/** Customer arrivals and patience. */
+export const CUSTOMERS = {
+  /** Mean game-minutes between arrivals at reputation 50. */
+  baseIntervalMinutes: 8,
+  /** At reputation 100 arrivals are this multiple as frequent (lower = faster). */
+  intervalAtMaxRep: 0.6,
+  /** At reputation 0 arrivals are this multiple as frequent. */
+  intervalAtMinRep: 1.8,
+  /** Game-minutes a customer waits before leaving. */
+  patienceMinutes: 10,
+  /** Most customers waiting at once. */
+  maxWaiting: 4,
+} as const;
+
+/** Reputation movement. */
+export const REPUTATION = {
+  start: 50,
+  min: 0,
+  max: 100,
+  /** Gained for a sale at or below the customer's offer. */
+  perSale: 3,
+  /** Extra penalty applied to a greedy counter that made them walk. */
+  perWalkout: -2,
+  /** Lost when a customer's patience runs out. */
+  perTimeout: -2,
+  /** Reputation at which the certificate unlocks. */
+  certificateAt: 90,
+} as const;
+
+/** Price tolerance: how far above their offer a customer will still pay. */
+export const PRICING = {
+  /** Tolerance multiplier at reputation 0 / 100 respectively. */
+  toleranceAtMinRep: 1.05,
+  toleranceAtMaxRep: 1.35,
+  /** A counter above tolerance still has this chance of being accepted anyway. */
+  stretchAcceptChance: 0.25,
+  /** ...and this chance of making them leave outright. */
+  walkoutChance: 0.5,
+} as const;
+
+/** Starting conditions for a brand-new farm. */
+export const STARTING = {
+  gold: 500,
+  seeds: { radish_seed: 4, tomato_seed: 2 } as Record<string, number>,
+  feed: 12,
+  chickens: 1,
+  cows: 0,
+} as const;
+
+/** Offline simulation cap: 2 game-hours. */
+export const OFFLINE_CAP_MINUTES = 120;
+
+/** How many events to retain in the rolling log. */
+export const MAX_EVENTS = 60;
