@@ -1,0 +1,332 @@
+<!--
+  Homestead sprite sheet.
+
+  Every symbol is authored on a 24x24 tile grid and inlined into the farm view at
+  build time. Nothing here may reference an external URL: the app iframe runs
+  under a strict CSP and must be entirely self-contained.
+
+  Palette is deliberately pastel and warm — cozy first, realistic never.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <defs>
+    <!-- Soft shadow used under characters so they sit on the ground. -->
+    <radialGradient id="shadowGrad">
+      <stop offset="0%" stop-color="#3a2f28" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#3a2f28" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="wellWater" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8fc7e8" />
+      <stop offset="100%" stop-color="#4a90b8" />
+    </linearGradient>
+  </defs>
+
+  <!-- ============================================================ ground -->
+
+  <symbol id="t-grass" viewBox="0 0 24 24">
+    <rect width="24" height="24" fill="#a8ce7c" />
+    <path d="M4 18q1-3 2 0M11 20q1-3 2 0M17 15q1-3 2 0M7 9q1-3 2 0M15 6q1-3 2 0"
+          stroke="#93bd68" stroke-width="1.2" fill="none" stroke-linecap="round" />
+  </symbol>
+
+  <symbol id="t-path" viewBox="0 0 24 24">
+    <rect width="24" height="24" fill="#dcc9a2" />
+    <circle cx="6" cy="8" r="1.4" fill="#cbb68c" />
+    <circle cx="16" cy="6" r="1.1" fill="#cbb68c" />
+    <circle cx="12" cy="16" r="1.6" fill="#cbb68c" />
+    <circle cx="19" cy="18" r="1.1" fill="#cbb68c" />
+  </symbol>
+
+  <!-- Untilled plot: grass gone ragged, ready for the hoe. -->
+  <symbol id="t-plot-raw" viewBox="0 0 24 24">
+    <rect width="24" height="24" fill="#9dbd76" />
+    <path d="M3 20q2-4 4 0M10 21q2-5 4 0M17 19q2-4 4 0" stroke="#89a865"
+          stroke-width="1.3" fill="none" stroke-linecap="round" />
+    <circle cx="8" cy="7" r="1.2" fill="#8a7355" opacity="0.5" />
+    <circle cx="17" cy="11" r="1" fill="#8a7355" opacity="0.5" />
+  </symbol>
+
+  <!-- Tilled soil: neat furrows. -->
+  <symbol id="t-plot-tilled" viewBox="0 0 24 24">
+    <rect width="24" height="24" fill="#8b6b4a" />
+    <path d="M0 5h24M0 12h24M0 19h24" stroke="#7a5c3e" stroke-width="2.4" />
+    <path d="M0 3.5h24M0 10.5h24M0 17.5h24" stroke="#9d7b57" stroke-width="1" opacity="0.7" />
+  </symbol>
+
+  <!-- Watered soil sits on top of tilled soil to darken it. -->
+  <symbol id="t-plot-wet" viewBox="0 0 24 24">
+    <rect width="24" height="24" fill="#5e442c" opacity="0.42" />
+  </symbol>
+
+  <symbol id="t-fence" viewBox="0 0 24 24">
+    <rect width="24" height="24" fill="#a8ce7c" />
+    <rect x="2" y="8" width="20" height="2.6" rx="1" fill="#b98f5f" />
+    <rect x="2" y="15" width="20" height="2.6" rx="1" fill="#b98f5f" />
+    <rect x="5" y="4" width="3" height="17" rx="1.2" fill="#a37c50" />
+    <rect x="16" y="4" width="3" height="17" rx="1.2" fill="#a37c50" />
+  </symbol>
+
+  <!-- ========================================================= buildings -->
+
+  <!-- Farmhouse, drawn across a 2x2 block (48x48). -->
+  <symbol id="b-farmhouse" viewBox="0 0 48 48">
+    <rect x="7" y="20" width="34" height="24" rx="2" fill="#f2e2c4" />
+    <path d="M3 22 24 5l21 17z" fill="#c86b5a" />
+    <path d="M3 22 24 5l21 17z" fill="none" stroke="#a9553f" stroke-width="1.5"
+          stroke-linejoin="round" />
+    <rect x="20" y="30" width="9" height="14" rx="1.5" fill="#8a5a3b" />
+    <circle cx="27" cy="37" r="1" fill="#f4d78a" />
+    <rect x="10" y="25" width="7" height="7" rx="1.2" fill="#8fc7e8" stroke="#e8d4b0"
+          stroke-width="1.4" />
+    <rect x="32" y="25" width="7" height="7" rx="1.2" fill="#8fc7e8" stroke="#e8d4b0"
+          stroke-width="1.4" />
+    <rect x="33" y="8" width="5" height="9" rx="1" fill="#b07a58" />
+  </symbol>
+
+  <!-- Chicken coop, 2x2. -->
+  <symbol id="b-coop" viewBox="0 0 48 48">
+    <rect x="9" y="22" width="30" height="22" rx="2" fill="#e9c9a0" />
+    <path d="M6 24 24 10l18 14z" fill="#d98f6a" />
+    <path d="M6 24 24 10l18 14z" fill="none" stroke="#b86f4e" stroke-width="1.5"
+          stroke-linejoin="round" />
+    <path d="M18 44v-11a6 6 0 0 1 12 0v11z" fill="#7d5236" />
+    <circle cx="24" cy="17" r="2.4" fill="#f4d78a" />
+    <path d="M12 30h6M30 30h6" stroke="#c9a678" stroke-width="1.6" stroke-linecap="round" />
+  </symbol>
+
+  <!-- Barn (also the storehouse), 2x2. -->
+  <symbol id="b-barn" viewBox="0 0 48 48">
+    <rect x="6" y="20" width="36" height="24" rx="2" fill="#c2604f" />
+    <path d="M3 21 24 6l21 15z" fill="#9d4838" />
+    <rect x="16" y="27" width="16" height="17" rx="1.5" fill="#e8d4b0" />
+    <path d="M24 27v17M16 33h16" stroke="#c2604f" stroke-width="2" />
+    <path d="M16 27 32 44M32 27 16 44" stroke="#c2604f" stroke-width="1.4" opacity="0.55" />
+    <rect x="21" y="11" width="6" height="6" rx="1" fill="#f4d78a" />
+  </symbol>
+
+  <!-- Farm stand, one tile wide, drawn across 2x1 (48x24). -->
+  <symbol id="b-stand" viewBox="0 0 48 24">
+    <rect x="3" y="11" width="42" height="11" rx="1.5" fill="#d8b98c" />
+    <rect x="3" y="9" width="42" height="3.5" rx="1.5" fill="#b8946a" />
+    <path d="M2 9h44l-4-6H6z" fill="#e8785f" />
+    <path d="M10 3v6M18 3v6M26 3v6M34 3v6" stroke="#f4e3c8" stroke-width="2.5" opacity="0.85" />
+    <rect x="6" y="15" width="4" height="7" fill="#a37c50" />
+    <rect x="38" y="15" width="4" height="7" fill="#a37c50" />
+  </symbol>
+
+  <symbol id="b-well" viewBox="0 0 24 24">
+    <ellipse cx="12" cy="17" rx="9" ry="5.5" fill="#9a9186" />
+    <ellipse cx="12" cy="15.5" rx="7" ry="4" fill="url(#wellWater)" />
+    <path d="M4 14v-2M20 14v-2" stroke="#8a8177" stroke-width="2.5" stroke-linecap="round" />
+    <path d="M3 8h18l-2-4H5z" fill="#b57a52" />
+    <rect x="11" y="8" width="2" height="5" fill="#8a8177" />
+  </symbol>
+
+  <!-- ============================================================= crops -->
+  <!--
+    Growth reads as scale plus detail: a seed is a nub, a sprout has two leaves,
+    "growing" is a fuller plant, and mature is crop-specific so the field is
+    legible at a glance.
+  -->
+
+  <symbol id="c-seed" viewBox="0 0 24 24">
+    <ellipse cx="12" cy="19" rx="3.5" ry="2" fill="#6b4f33" />
+    <circle cx="12" cy="17.5" r="1.5" fill="#a8ce7c" />
+  </symbol>
+
+  <symbol id="c-sprout" viewBox="0 0 24 24">
+    <path d="M12 20v-5" stroke="#5f9440" stroke-width="1.6" stroke-linecap="round" />
+    <path d="M12 16q-4-1-4.5-4Q11 12 12 16" fill="#7bb85a" />
+    <path d="M12 16q4-1 4.5-4Q13 12 12 16" fill="#8fca6b" />
+  </symbol>
+
+  <symbol id="c-growing" viewBox="0 0 24 24">
+    <path d="M12 21v-9" stroke="#5f9440" stroke-width="1.8" stroke-linecap="round" />
+    <path d="M12 15q-5-1-6-5Q11 10 12 15" fill="#7bb85a" />
+    <path d="M12 13q5-1 6-5Q13 8 12 13" fill="#8fca6b" />
+    <path d="M12 18q-4-1-5-4Q11 14 12 18" fill="#6ea94d" />
+  </symbol>
+
+  <symbol id="c-radish" viewBox="0 0 24 24">
+    <path d="M12 17q-5-2-6-6Q11 12 12 17" fill="#7bb85a" />
+    <path d="M12 17q5-2 6-6Q13 12 12 17" fill="#8fca6b" />
+    <circle cx="12" cy="18" r="4" fill="#e0637a" />
+    <path d="M12 22v1.5" stroke="#f2dcd0" stroke-width="1.2" stroke-linecap="round" />
+    <circle cx="10.5" cy="16.8" r="1.1" fill="#f093a4" opacity="0.8" />
+  </symbol>
+
+  <symbol id="c-lettuce" viewBox="0 0 24 24">
+    <circle cx="12" cy="17" r="6" fill="#7bb85a" />
+    <circle cx="12" cy="16.5" r="4.2" fill="#95cd72" />
+    <circle cx="12" cy="16" r="2.4" fill="#b0dd8e" />
+    <path d="M6 17q3 3 6 3t6-3" stroke="#5f9440" stroke-width="1" fill="none" />
+  </symbol>
+
+  <symbol id="c-tomato" viewBox="0 0 24 24">
+    <path d="M12 21V8" stroke="#5f9440" stroke-width="1.8" stroke-linecap="round" />
+    <path d="M12 12q-5-1-6-4Q11 8 12 12" fill="#7bb85a" />
+    <path d="M12 10q5-1 6-4Q13 6 12 10" fill="#8fca6b" />
+    <circle cx="8.5" cy="16" r="3.2" fill="#e2564b" />
+    <circle cx="15.5" cy="17.5" r="3.6" fill="#d8453c" />
+    <circle cx="7.6" cy="15" r="1" fill="#f08a80" opacity="0.85" />
+  </symbol>
+
+  <symbol id="c-corn" viewBox="0 0 24 24">
+    <path d="M12 22V4" stroke="#5f9440" stroke-width="2" stroke-linecap="round" />
+    <path d="M12 9q-6 1-8 5Q10 15 12 9" fill="#7bb85a" />
+    <path d="M12 13q6 1 8 5Q14 19 12 13" fill="#8fca6b" />
+    <ellipse cx="12" cy="9" rx="2.6" ry="5" fill="#f2c94c" />
+    <path d="M12 5v8" stroke="#dbae32" stroke-width="0.9" />
+    <path d="M10 6.5h4M10 9h4M10 11.5h4" stroke="#dbae32" stroke-width="0.7" />
+  </symbol>
+
+  <symbol id="c-strawberry" viewBox="0 0 24 24">
+    <circle cx="12" cy="15" r="6" fill="#6ea94d" />
+    <circle cx="12" cy="14" r="4" fill="#84be62" />
+    <path d="M8 19a2.6 2.6 0 1 0 3.4-2.4z" fill="#e2564b" />
+    <path d="M16.4 20a2.4 2.4 0 1 0-3-2.2z" fill="#d8453c" />
+    <circle cx="9" cy="18.4" r="0.5" fill="#ffe9b0" />
+    <circle cx="15.2" cy="19" r="0.5" fill="#ffe9b0" />
+  </symbol>
+
+  <symbol id="c-pumpkin" viewBox="0 0 24 24">
+    <path d="M12 21q-6-1-7-5Q11 15 12 21" fill="#6ea94d" />
+    <ellipse cx="12" cy="17" rx="7" ry="5.5" fill="#e89347" />
+    <ellipse cx="12" cy="17" rx="4.4" ry="5.4" fill="#f2a75c" />
+    <ellipse cx="12" cy="17" rx="1.6" ry="5.2" fill="#f7b972" />
+    <path d="M12 11.5V8.5" stroke="#6b7d3a" stroke-width="2" stroke-linecap="round" />
+  </symbol>
+
+  <!-- ======================================================== characters -->
+  <!--
+    Wren and the animals are built from parts rather than frames, so the walk
+    cycle is CSS animating the limbs. Far less art, and it stays crisp at any
+    zoom.
+  -->
+
+  <symbol id="ch-wren-down" viewBox="0 0 24 24">
+    <g class="legs">
+      <rect class="leg leg-l" x="8.5" y="17" width="2.6" height="5" rx="1.2" fill="#5b6b8a" />
+      <rect class="leg leg-r" x="12.9" y="17" width="2.6" height="5" rx="1.2" fill="#5b6b8a" />
+    </g>
+    <rect x="7.5" y="9" width="9" height="9" rx="3" fill="#79a86b" />
+    <circle cx="12" cy="6.5" r="4" fill="#f2c9a0" />
+    <path d="M6.5 6.5q5.5-5 11 0z" fill="#c9a86a" />
+    <ellipse cx="12" cy="5.6" rx="6" ry="1.7" fill="#d9bb7c" />
+    <circle cx="10.3" cy="7" r="0.7" fill="#43352c" />
+    <circle cx="13.7" cy="7" r="0.7" fill="#43352c" />
+    <path d="M11 8.6q1 .8 2 0" stroke="#43352c" stroke-width="0.6" fill="none"
+          stroke-linecap="round" />
+  </symbol>
+
+  <symbol id="ch-wren-up" viewBox="0 0 24 24">
+    <g class="legs">
+      <rect class="leg leg-l" x="8.5" y="17" width="2.6" height="5" rx="1.2" fill="#5b6b8a" />
+      <rect class="leg leg-r" x="12.9" y="17" width="2.6" height="5" rx="1.2" fill="#5b6b8a" />
+    </g>
+    <rect x="7.5" y="9" width="9" height="9" rx="3" fill="#6d9b60" />
+    <circle cx="12" cy="6.5" r="4" fill="#8a6a45" />
+    <ellipse cx="12" cy="5.6" rx="6" ry="1.7" fill="#c9a86a" />
+  </symbol>
+
+  <symbol id="ch-wren-side" viewBox="0 0 24 24">
+    <g class="legs">
+      <rect class="leg leg-l" x="10" y="17" width="2.8" height="5" rx="1.3" fill="#4d5c78" />
+      <rect class="leg leg-r" x="11.6" y="17" width="2.8" height="5" rx="1.3" fill="#5b6b8a" />
+    </g>
+    <rect x="8.5" y="9" width="8" height="9" rx="3" fill="#79a86b" />
+    <circle cx="13" cy="6.5" r="4" fill="#f2c9a0" />
+    <path d="M9 6q4-4.5 8-1z" fill="#c9a86a" />
+    <ellipse cx="12.4" cy="5.6" rx="5.6" ry="1.7" fill="#d9bb7c" />
+    <circle cx="14.6" cy="7" r="0.7" fill="#43352c" />
+  </symbol>
+
+  <symbol id="a-chicken" viewBox="0 0 24 24">
+    <ellipse cx="12" cy="15" rx="5.5" ry="4.6" fill="#fbf3e4" />
+    <circle cx="15.5" cy="10.5" r="3.2" fill="#fdf8ee" />
+    <path d="M14.5 7.6q1-2 2 0q1-1.6 1.6.4" fill="#e2564b" />
+    <path d="M18.4 10.8 20.6 12l-2.2 1z" fill="#f2a75c" />
+    <circle cx="16.4" cy="10.2" r="0.6" fill="#43352c" />
+    <path d="M7 15.5q2.5 2 4.5 1" stroke="#e9dcc4" stroke-width="1.2" fill="none" />
+    <path d="M10.5 19v2M13.5 19v2" stroke="#f2a75c" stroke-width="1.2" stroke-linecap="round" />
+  </symbol>
+
+  <symbol id="a-cow" viewBox="0 0 24 24">
+    <ellipse cx="11.5" cy="14" rx="7.5" ry="5.2" fill="#fbf7ef" />
+    <ellipse cx="8" cy="12.6" rx="2.6" ry="2" fill="#6b5443" />
+    <ellipse cx="14" cy="16" rx="2" ry="1.5" fill="#6b5443" />
+    <circle cx="18" cy="10.5" r="3.6" fill="#fbf7ef" />
+    <ellipse cx="19" cy="12" rx="2.2" ry="1.6" fill="#f0b8b0" />
+    <circle cx="18.4" cy="12" r="0.4" fill="#8a6a5e" />
+    <circle cx="19.8" cy="12" r="0.4" fill="#8a6a5e" />
+    <circle cx="17.2" cy="9.2" r="0.6" fill="#43352c" />
+    <path d="M15.6 7.6q-.6-2 1-2M20.6 7.8q.8-1.8-.8-2.2" stroke="#c9a86a" stroke-width="1.3"
+          fill="none" stroke-linecap="round" />
+    <path d="M6 19v2.5M10 19v2.5M14 19v2M17 18.4v2.6" stroke="#8a6a5e" stroke-width="1.4"
+          stroke-linecap="round" />
+  </symbol>
+
+  <!-- Villagers. The palette is swapped per portrait via CSS custom properties. -->
+  <symbol id="ch-customer" viewBox="0 0 24 24">
+    <rect x="8" y="17" width="2.6" height="5" rx="1.2" fill="#5a4a3c" />
+    <rect x="13.4" y="17" width="2.6" height="5" rx="1.2" fill="#5a4a3c" />
+    <path d="M7 18V12a5 5 0 0 1 10 0v6z" fill="var(--cust-body, #7b8bbd)" />
+    <circle cx="12" cy="7.5" r="4" fill="var(--cust-skin, #f2c9a0)" />
+    <path d="M8 6.6q4-5 8 0z" fill="var(--cust-hair, #6b4f33)" />
+    <circle cx="10.4" cy="8" r="0.7" fill="#43352c" />
+    <circle cx="13.6" cy="8" r="0.7" fill="#43352c" />
+    <path d="M10.8 10q1.2 1 2.4 0" stroke="#43352c" stroke-width="0.6" fill="none"
+          stroke-linecap="round" />
+  </symbol>
+
+  <!-- ============================================================ effects -->
+
+  <symbol id="fx-shadow" viewBox="0 0 24 24">
+    <ellipse cx="12" cy="21" rx="6" ry="2.4" fill="url(#shadowGrad)" />
+  </symbol>
+
+  <symbol id="fx-sparkle" viewBox="0 0 24 24">
+    <path d="M12 2.5 13.4 7 18 8.4 13.4 9.8 12 14.4 10.6 9.8 6 8.4 10.6 7z" fill="#ffd76a" />
+    <path d="M18.5 13 19.3 15.2 21.5 16 19.3 16.8 18.5 19 17.7 16.8 15.5 16 17.7 15.2z"
+          fill="#fff0b8" />
+  </symbol>
+
+  <symbol id="fx-droplet" viewBox="0 0 24 24">
+    <path d="M12 5c3 4.6 4.5 7 4.5 9a4.5 4.5 0 0 1-9 0c0-2 1.5-4.4 4.5-9z" fill="#8fc7e8" />
+    <path d="M10 14.5a2 2 0 0 0 1.4 2.6" stroke="#e4f2fa" stroke-width="1.1" fill="none"
+          stroke-linecap="round" />
+  </symbol>
+
+  <!-- Small glyphs shown above a character to say what they are doing. -->
+  <symbol id="ic-hoe" viewBox="0 0 24 24">
+    <path d="M6 19 17 8" stroke="#a37c50" stroke-width="2.4" stroke-linecap="round" />
+    <path d="M14 5h6v5z" fill="#b6bfc8" />
+  </symbol>
+  <symbol id="ic-can" viewBox="0 0 24 24">
+    <rect x="6" y="10" width="10" height="8" rx="2" fill="#8fa8b8" />
+    <path d="M16 12h4l-2 6" stroke="#8fa8b8" stroke-width="2" fill="none" stroke-linecap="round" />
+    <rect x="8" y="7" width="5" height="3" rx="1.4" fill="#7a94a4" />
+  </symbol>
+  <symbol id="ic-basket" viewBox="0 0 24 24">
+    <path d="M4 10h16l-2 9H6z" fill="#c9a86a" />
+    <path d="M7 10a5 5 0 0 1 10 0" stroke="#a3854f" stroke-width="1.8" fill="none" />
+    <path d="M8 12l1.4 6M16 12l-1.4 6" stroke="#a3854f" stroke-width="1.1" />
+  </symbol>
+  <symbol id="ic-feed" viewBox="0 0 24 24">
+    <path d="M5 18h14l-2-8H7z" fill="#d8b98c" />
+    <circle cx="10" cy="13.5" r="1.1" fill="#b8946a" />
+    <circle cx="14" cy="15" r="1.1" fill="#b8946a" />
+  </symbol>
+  <symbol id="ic-heart" viewBox="0 0 24 24">
+    <path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9z" fill="#e8788f" />
+  </symbol>
+  <symbol id="ic-zzz" viewBox="0 0 24 24">
+    <path d="M6 8h7l-7 8h7" stroke="#8a94a8" stroke-width="2" fill="none" stroke-linejoin="round" />
+    <path d="M15 4h5l-5 6h5" stroke="#8a94a8" stroke-width="1.6" fill="none"
+          stroke-linejoin="round" />
+  </symbol>
+  <symbol id="ic-box" viewBox="0 0 24 24">
+    <path d="M4 9h16v10H4z" fill="#c9a86a" />
+    <path d="M4 9 12 4l8 5" fill="#dcc08a" />
+    <path d="M12 9v10" stroke="#a3854f" stroke-width="1.4" />
+  </symbol>
+</svg>

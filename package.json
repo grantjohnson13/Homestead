@@ -8,9 +8,11 @@
     "node": ">=22"
   },
   "scripts": {
-    "build:ui": "node --experimental-strip-types scripts/build-ui.ts",
-    "typecheck": "tsc --noEmit",
+    "build:ui": "node --no-warnings --experimental-strip-types scripts/build-ui.ts",
+    "build:fixture": "node --no-warnings --experimental-strip-types scripts/build-fixture.ts",
+    "typecheck": "npm run build:ui && tsc --noEmit",
     "cf-types": "wrangler types",
+    "pretest": "npm run build:ui",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
@@ -26,8 +28,10 @@
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.21.3",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^22.10.5",
     "eslint": "^9.18.0",
+    "jsdom": "^29.1.1",
     "prettier": "^3.4.2",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.67.0",

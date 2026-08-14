@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Homestead</title>
+    <style>/*__STYLES__*/</style>
+  </head>
+  <body>
+    <!--__SPRITES__-->
+
+    <div id="app">
+      <header class="hud">
+        <span class="title">🌾 Homestead</span>
+        <span class="badge" id="cert" style="display: none"></span>
+        <span class="stat"><span class="label">gold</span><b id="stat-gold">—</b></span>
+        <span class="stat"><span class="label">rep</span><b id="stat-rep">—</b></span>
+        <span class="stat"><span class="label">day</span><b id="stat-clock">—</b></span>
+      </header>
+
+      <div class="farm" id="board-mount">
+        <div class="loading" id="loading">Opening the gate…</div>
+      </div>
+
+      <aside class="side">
+        <section class="card">
+          <h2>Farmhand</h2>
+          <div class="wren-row">
+            <span class="wren-name" id="wren-name">Wren</span>
+            <span id="wren-stamina">—</span>
+          </div>
+          <div class="bar" id="stamina-bar"><i style="width: 0%"></i></div>
+          <div class="doing" id="wren-doing"></div>
+          <h2>Task queue</h2>
+          <ul class="queue" id="queue"></ul>
+        </section>
+
+        <section class="card">
+          <h2>At the stand</h2>
+          <div id="customers"></div>
+        </section>
+      </aside>
+
+      <footer class="ticker" id="ticker">
+        <span class="dot"></span>
+        <span class="line" id="ticker-line">Waiting for news…</span>
+      </footer>
+    </div>
+
+    <div class="tip" id="tip" role="tooltip"></div>
+
+    <script>
+      /*__EMBED__*/
+    </script>
+    <script>
+      /*__APP__*/
+    </script>
+  </body>
+</html>
