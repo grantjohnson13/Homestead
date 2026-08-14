@@ -40,8 +40,9 @@
         <div class="loading" id="loading">Opening the gate…</div>
       </div>
 
-      <aside class="side">
-        <nav class="tabs" id="tabs" role="tablist">
+      <div class="side-shell">
+        <aside class="side">
+          <nav class="tabs" id="tabs" role="tablist">
           <button class="tab" type="button" data-tab="wren" role="tab" aria-selected="true">
             <svg class="glyph" aria-hidden="true"><use href="#ch-wren-down" /></svg>
             <span>Wren</span>
@@ -62,6 +63,8 @@
             <i class="alert" hidden></i>
           </button>
         </nav>
+
+        <div class="panels">
         <section class="card panel" data-panel="wren">
           <h2>Farmhand</h2>
           <div class="wren-row">
@@ -95,7 +98,9 @@
           <h2>Investments</h2>
           <div id="upgrades"></div>
         </section>
-      </aside>
+        </div>
+        </aside>
+      </div>
 
       <footer class="ticker" id="ticker">
         <span class="dot"></span>

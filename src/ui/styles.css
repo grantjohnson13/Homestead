@@ -402,12 +402,53 @@ button.stat.speed.fast .glyph {
 
 /* ------------------------------------------------------------- side panel -- */
 
-.side {
+/*
+  The sidebar must never decide how tall the row is — the farm does.
+
+  Above the stacking breakpoint the shell owns the grid cell and the sidebar is
+  absolutely positioned inside it. Absolutely positioned children contribute
+  nothing to their parent's intrinsic height, so a long Investments list can no
+  longer stretch the row and shrink the board beside it; the panel area scrolls
+  instead. The tab bar stays pinned so you never scroll away from it.
+*/
+.side-shell {
   grid-area: side;
+  position: relative;
+  min-width: 0;
+}
+
+.side {
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+  min-height: 0;
+}
+
+.panels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  /* Room for the scrollbar so content does not sit under it. */
+  scrollbar-width: thin;
+}
+
+@media (min-width: 621px) {
+  .side-shell {
+    /* A floor, so a short farm cannot squeeze the sidebar into nothing. */
+    min-height: 300px;
+  }
+
+  .side {
+    position: absolute;
+    inset: 0;
+  }
+
+  .panels {
+    flex: 1;
+  }
 }
 
 /* ---------------------------------------------------------------- tabs -- */
@@ -569,6 +610,8 @@ button.stat.speed.fast .glyph {
   background: var(--warn);
 }
 
+/* No inner scroller: the panel scrolls, so a nested one would only trap the
+   pointer and hide half the queue. */
 .queue {
   list-style: none;
   margin: 0;
@@ -576,8 +619,6 @@ button.stat.speed.fast .glyph {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  max-height: 148px;
-  overflow-y: auto;
 }
 
 .queue li {

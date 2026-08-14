@@ -105,10 +105,24 @@ describe("farm view build", () => {
     expect(html).toMatch(/@media \(max-width: 6\d\dpx\)/);
     expect(html).toContain("width: 100%");
     expect(html).toContain("viewport-fit=cover");
-    // Nothing may impose a width the phone cannot honour. `max-width` is a cap
-    // rather than a floor, so the lookbehind lets it through.
-    expect(html).not.toMatch(/min-width:\s*[4-9]\d\dpx/);
-    expect(html).not.toMatch(/(?<!-)\bwidth:\s*[4-9]\d\dpx/);
+
+    // Nothing may impose a width the phone cannot honour. Media query
+    // conditions are stripped first: `@media (min-width: 621px)` is responsive
+    // design, not an element demanding 621px. `max-width` is a cap rather than
+    // a floor, so the lookbehind lets it through.
+    const declarations = html.replace(/@media[^{]*\{/g, "{");
+    expect(declarations).not.toMatch(/min-width:\s*[4-9]\d\dpx/);
+    expect(declarations).not.toMatch(/(?<!-)\bwidth:\s*[4-9]\d\dpx/);
+  });
+
+  it("caps the sidebar so it can never shrink the farm", () => {
+    // A long Investments list used to stretch the grid row and squeeze the
+    // board beside it. The sidebar is now caged and scrolls internally.
+    expect(html).toContain("side-shell");
+    expect(html).toContain(".panels");
+    expect(html).toMatch(/\.panels\s*\{[^}]*overflow-y:\s*auto/);
+    // ...but only in the two-column layout; stacked on a phone it flows.
+    expect(html).toMatch(/@media \(min-width: 6\d\dpx\)[\s\S]{0,400}position:\s*absolute/);
   });
 
   it("honours host safe-area insets", () => {
