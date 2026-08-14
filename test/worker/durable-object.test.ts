@@ -6,7 +6,7 @@ import {
 } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
 import { ALARM_INTERVAL_MS } from "../../src/do/farm-do.ts";
-import { OFFLINE_CAP_MINUTES, REAL_MS_PER_TICK } from "../../src/sim/constants.ts";
+import { OFFLINE_CAP_REAL_MS, REAL_MS_PER_TICK } from "../../src/sim/constants.ts";
 import type { FarmDurableObject } from "../../src/do/farm-do.ts";
 import { INIT_MESSAGE, rpc } from "./mcp-client.ts";
 
@@ -122,11 +122,11 @@ describe("Durable Object: the alarm loop", () => {
     const key = "alarm-budget";
     await callTool(key, "get_farm_state");
 
-    // Pretend the farm has already ticked away its full two game-hours.
+    // Pretend the farm has already ticked away its full away budget.
     await runInDurableObject(stubFor(key), async (instance) => {
       const state = await instance.debugState();
       if (!state) throw new Error("no farm");
-      state.awayMinutes = OFFLINE_CAP_MINUTES;
+      state.awayMs = OFFLINE_CAP_REAL_MS;
       state.lastRealMs = Date.now() - 10 * REAL_MS_PER_TICK;
       await instance.debugWrite(state);
     });
@@ -147,7 +147,7 @@ describe("Durable Object: the alarm loop", () => {
     await runInDurableObject(stubFor(key), async (instance) => {
       const state = await instance.debugState();
       if (!state) throw new Error("no farm");
-      state.awayMinutes = OFFLINE_CAP_MINUTES;
+      state.awayMs = OFFLINE_CAP_REAL_MS;
       state.paused = true;
       await instance.debugWrite(state);
     });
@@ -158,7 +158,7 @@ describe("Durable Object: the alarm loop", () => {
     const alarmAt = await runInDurableObject(stubFor(key), (i) => i.debugAlarmAt());
 
     expect(state?.paused).toBe(false);
-    expect(state?.awayMinutes).toBe(0);
+    expect(state?.awayMs).toBe(0);
     expect(alarmAt).not.toBeNull();
   });
 
@@ -170,7 +170,7 @@ describe("Durable Object: the alarm loop", () => {
     await runInDurableObject(stubFor(key), async (instance) => {
       const state = await instance.debugState();
       if (!state) throw new Error("no farm");
-      state.awayMinutes = OFFLINE_CAP_MINUTES / 2;
+      state.awayMs = OFFLINE_CAP_REAL_MS / 2;
       // ...and a very long absence on top.
       state.lastRealMs = Date.now() - 10_000 * REAL_MS_PER_TICK;
       await instance.debugWrite(state);
@@ -182,7 +182,7 @@ describe("Durable Object: the alarm loop", () => {
 
     const advanced = (after?.clock ?? 0) - (before?.clock ?? 0);
     // Only the unspent half of the budget may be simulated.
-    expect(advanced).toBe(OFFLINE_CAP_MINUTES / 2);
+    expect(advanced).toBe(OFFLINE_CAP_REAL_MS / 2 / REAL_MS_PER_TICK);
     expect(after?.paused).toBe(true);
   });
 

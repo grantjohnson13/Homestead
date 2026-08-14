@@ -72,7 +72,12 @@ export function migrate(state: FarmState): FarmState {
   if (typeof state.speed !== "number" || state.speed <= 0) state.speed = fallback.speed;
   if (!Array.isArray(state.events)) state.events = [];
   if (typeof state.eventsLogged !== "number") state.eventsLogged = state.events.length;
-  if (typeof state.awayMinutes !== "number") state.awayMinutes = 0;
+  // The away budget used to be counted in game-minutes; it is real ms now.
+  const legacyAway = (state as unknown as { awayMinutes?: number }).awayMinutes;
+  if (typeof state.awayMs !== "number") {
+    state.awayMs = typeof legacyAway === "number" ? legacyAway * 1000 : 0;
+    delete (state as unknown as { awayMinutes?: number }).awayMinutes;
+  }
   if (!state.counters || typeof state.counters !== "object") state.counters = {};
   if (!Array.isArray(state.certificates)) state.certificates = [];
   if (!state.stand || typeof state.stand !== "object") state.stand = {};

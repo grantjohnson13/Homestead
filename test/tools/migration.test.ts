@@ -16,7 +16,8 @@ describe("migrating an older save", () => {
     delete legacy["prices"];
     delete legacy["lostSales"];
     delete legacy["eventsLogged"];
-    delete legacy["awayMinutes"];
+    delete legacy["awayMs"];
+    delete legacy["speed"];
     return farm;
   }
 
@@ -33,7 +34,18 @@ describe("migrating an older save", () => {
   it("fills in counters added after the save was written", () => {
     const farm = migrate(legacyFarm());
     expect(typeof farm.eventsLogged).toBe("number");
-    expect(farm.awayMinutes).toBe(0);
+    expect(farm.awayMs).toBe(0);
+    expect(farm.speed).toBe(1);
+  });
+
+  it("converts an away budget that was counted in game-minutes", () => {
+    const farm = legacyFarm();
+    (farm as unknown as Record<string, unknown>)["awayMinutes"] = 30;
+
+    migrate(farm);
+    // 30 game-minutes was 30 real seconds at the only speed that then existed.
+    expect(farm.awayMs).toBe(30_000);
+    expect((farm as unknown as Record<string, unknown>)["awayMinutes"]).toBeUndefined();
   });
 
   it("keeps a partially-set price list and tops up the rest", () => {

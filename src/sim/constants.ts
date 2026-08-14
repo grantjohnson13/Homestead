@@ -19,19 +19,21 @@ export const REAL_MS_PER_TICK = 1000;
  * a person could answer. With a standing price list the player is never racing
  * the clock, so faster is simply livelier.
  */
-export const SPEED_OPTIONS = [0.5, 1, 2, 4, 8] as const;
+export const SPEED_OPTIONS = [0.5, 1, 2, 5, 15, 60, 360] as const;
 export type Speed = (typeof SPEED_OPTIONS)[number];
 
 export const DEFAULT_SPEED = 1;
 export const MIN_SPEED = 0.25;
-export const MAX_SPEED = 8;
+export const MAX_SPEED = 360;
 
 export const SPEED_LABELS: Record<string, string> = {
   "0.5": "half speed — a slow afternoon",
   "1": "normal — one game-minute per second",
   "2": "brisk",
-  "4": "fast — the day rattles along",
-  "8": "very fast — blink and you'll miss it",
+  "5": "fast — the day rattles along",
+  "15": "very fast — a game-hour every four seconds",
+  "60": "a game-hour a second",
+  "360": "fast-forward — six game-hours a second",
 };
 
 /**
@@ -161,8 +163,24 @@ export const STARTING = {
   cows: 0,
 } as const;
 
-/** Offline simulation cap: 2 game-hours. */
-export const OFFLINE_CAP_MINUTES = 120;
+/**
+ * How long the world keeps running after the player goes quiet, in REAL time.
+ *
+ * Measured in real milliseconds rather than game-minutes on purpose. The brief
+ * specified two game-hours, which at normal speed is exactly this two real
+ * minutes — but a budget denominated in game-time collapses as speed rises: at
+ * 360x, two game-hours is a third of a real second, so the world would pause
+ * before the player could blink. Real time is the thing actually being
+ * described ("while you were away"), and it behaves sensibly at every speed.
+ */
+export const OFFLINE_CAP_REAL_MS = 120_000;
+
+/**
+ * Hard ceiling on ticks simulated in one catch-up, whatever the speed. At 360x
+ * a full away budget is ~43k ticks, which is fine; this only exists so a corrupt
+ * clock cannot spin the loop forever.
+ */
+export const MAX_TICKS_PER_CATCHUP = 100_000;
 
 /** How many events to retain in the rolling log. */
 export const MAX_EVENTS = 60;

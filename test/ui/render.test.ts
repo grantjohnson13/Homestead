@@ -649,6 +649,25 @@ describe("the side panel and ticker", () => {
     expect(Array.from(pips).every((p) => p.className.includes("on"))).toBe(true);
   });
 
+  it("says why the road is quiet when there is nothing to sell", async () => {
+    const state = fixtureState();
+    state.customers = [];
+    state.standStatus = {
+      open: false,
+      reason: "Nobody is coming — the farm has nothing to sell.",
+    };
+    const h = await mount(state);
+    expect(h.document.getElementById("customers")?.textContent).toContain("nothing to sell");
+  });
+
+  it("shows the plain empty message when the stand is simply between customers", async () => {
+    const state = fixtureState();
+    state.customers = [];
+    state.standStatus = { open: true, reason: "The stand is open for business." };
+    const h = await mount(state);
+    expect(h.document.getElementById("customers")?.textContent).toContain("Nobody at the stand");
+  });
+
   it("shows the gold, reputation and clock", async () => {
     const state = fixtureState();
     state.gold = 777;

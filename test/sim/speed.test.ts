@@ -3,6 +3,7 @@ import {
   DEFAULT_SPEED,
   MAX_SPEED,
   MIN_SPEED,
+  OFFLINE_CAP_REAL_MS,
   REAL_MS_PER_TICK,
   SPEED_OPTIONS,
   TICKS_PER_ALARM,
@@ -171,13 +172,37 @@ describe("speed changes pace, not balance", () => {
     expect(game(caught)).toBe(game(ticked));
   });
 
-  it("keeps the offline cap measured in game-minutes, not real ones", () => {
+  /**
+   * The away budget is spent in REAL time, so it means the same thing at every
+   * speed. A budget denominated in game-minutes would collapse as speed rose —
+   * at 360x, two game-hours is a third of a second, and the world would pause
+   * before the player could blink.
+   */
+  it("spends the away budget in real time, whatever the speed", () => {
+    const normal = createFarm(5, 0);
     const fast = createFarm(5, 0);
     setSpeed(fast, 0, 8);
 
-    // A very long absence still only simulates the capped game-time.
+    catchUp(normal, 10_000 * REAL_MS_PER_TICK);
     catchUp(fast, 10_000 * REAL_MS_PER_TICK);
+
+    expect(normal.paused).toBe(true);
     expect(fast.paused).toBe(true);
-    expect(fast.clock).toBeLessThanOrEqual(120);
+
+    // Both burned the same real budget; the fast farm simply got eight times
+    // as much world out of it.
+    const capMinutes = OFFLINE_CAP_REAL_MS / REAL_MS_PER_TICK;
+    expect(normal.clock).toBe(capMinutes);
+    expect(fast.clock).toBe(capMinutes * 8);
+  });
+
+  it("still runs for a usable stretch at the very top speed", () => {
+    const farm = createFarm(5, 0);
+    setSpeed(farm, 0, MAX_SPEED);
+
+    // The whole point of the fix: at 360x the world must not pause instantly.
+    catchUp(farm, 1000);
+    expect(farm.paused).toBe(false);
+    expect(farm.clock).toBe(MAX_SPEED);
   });
 });

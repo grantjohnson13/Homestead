@@ -894,14 +894,12 @@
     // The server computes the day-clock so this and the text fallback agree.
     setText("stat-clock", farm.time ? farm.time.label : "—");
 
-    // The speed pill only appears when the world is not running normally, so a
-    // default farm keeps a quiet header.
     var speed = typeof farm.speed === "number" ? farm.speed : 1;
-    var speedPill = document.getElementById("stat-speed-pill");
-    if (speedPill) {
-      speedPill.style.display = speed === 1 ? "none" : "";
-      setText("stat-speed", speed + "x");
-      speedPill.classList.toggle("slow", speed < 1);
+    var speedButton = document.getElementById("speed-button");
+    if (speedButton && !speedPending) {
+      setText("stat-speed", formatSpeed(speed) + "x");
+      speedButton.classList.toggle("fast", speed > 1);
+      speedButton.classList.toggle("slow", speed < 1);
     }
 
     var cert = document.getElementById("cert");
@@ -968,7 +966,12 @@
     var list = document.getElementById("customers");
     list.textContent = "";
     if (farm.customers.length === 0) {
-      list.appendChild(el("div", "empty", "Nobody at the stand"));
+      // Say *why* nobody is here. A farm with nothing to sell gets no visitors
+      // at all, and an unexplained empty road reads as a broken game.
+      var status = farm.standStatus;
+      list.appendChild(
+        el("div", "empty", status && !status.open ? status.reason : "Nobody at the stand"),
+      );
     } else {
       farm.customers.forEach(function (customer) {
         list.appendChild(customerCard(customer));
@@ -1345,12 +1348,68 @@
      Boot
      ===================================================================== */
 
+  /* =====================================================================
+     The speed control — the one thing the view is allowed to change
+     ===================================================================== */
+
+  var SPEED_LADDER = [0.5, 1, 2, 5, 15, 60, 360];
+  var speedPending = false;
+
+  function formatSpeed(speed) {
+    return speed < 1 ? String(speed) : String(Math.round(speed));
+  }
+
+  /** Next rung up the ladder, wrapping back round to the slowest. */
+  function nextSpeed(current) {
+    for (var i = 0; i < SPEED_LADDER.length; i++) {
+      if (SPEED_LADDER[i] > current + 1e-9) return SPEED_LADDER[i];
+    }
+    return SPEED_LADDER[0];
+  }
+
+  /**
+   * The view is otherwise strictly read-only — the conversation drives the farm.
+   * Pace is the exception: it changes how you *watch* the world rather than what
+   * happens in it, and asking Claude to nudge a speed dial would be absurd.
+   */
+  function bindSpeedButton() {
+    var button = document.getElementById("speed-button");
+    if (!button) return;
+
+    button.addEventListener("click", function () {
+      if (!handshakeDone || speedPending || !farm) return;
+
+      var target = nextSpeed(typeof farm.speed === "number" ? farm.speed : 1);
+      speedPending = true;
+      button.classList.add("pending");
+      setText("stat-speed", formatSpeed(target) + "x");
+
+      callServerTool("set_speed", { speed: target })
+        .then(function (result) {
+          var structured = result && result.structuredContent;
+          if (structured && structured.state) setFarm(structured.state);
+        })
+        .catch(function (err) {
+          log("speed change failed", err);
+          markStale();
+        })
+        .then(function () {
+          speedPending = false;
+          button.classList.remove("pending");
+          // Resample straight away so the new pace is visible immediately.
+          backoffMs = 0;
+          schedulePoll(0);
+        });
+    });
+  }
+
   function boot() {
     var mount = document.getElementById("board-mount");
     layers = buildBoard();
     mount.textContent = "";
     mount.appendChild(layers.board);
     tip = document.getElementById("tip");
+    bindSpeedButton();
 
     window.addEventListener("resize", reportSize);
 

@@ -195,17 +195,54 @@ body {
   height: 20px;
 }
 
-/* Speeding up is loud; slowing down is calm. */
-.stat.speed {
+/* The speed control. Quiet at normal pace, loud when the world is racing. */
+button.stat.speed {
+  font-family: inherit;
+  border: 1px solid transparent;
+  cursor: pointer;
+  color: var(--ink);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+button.stat.speed:hover {
+  border-color: var(--line);
+}
+
+button.stat.speed:focus-visible {
+  outline: 2px solid var(--good);
+  outline-offset: 1px;
+}
+
+button.stat.speed.fast {
   background: #f4d78a;
   color: #6b4f1f;
   font-weight: 650;
 }
 
-.stat.speed.slow {
+button.stat.speed.slow {
   background: var(--panel-2);
   color: var(--ink-soft);
-  font-weight: 500;
+}
+
+button.stat.speed.pending {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* At speed the bolt keeps time with the world. */
+button.stat.speed.fast .glyph {
+  animation: pulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .badge {

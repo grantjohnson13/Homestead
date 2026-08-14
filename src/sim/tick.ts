@@ -11,8 +11,9 @@ import {
   DEFAULT_SPEED,
   MAX_EVENTS,
   MAX_SPEED,
+  MAX_TICKS_PER_CATCHUP,
   MIN_SPEED,
-  OFFLINE_CAP_MINUTES,
+  OFFLINE_CAP_REAL_MS,
   REAL_MS_PER_TICK,
   SPEED_OPTIONS,
 } from "./constants.ts";
@@ -53,33 +54,52 @@ export interface CatchUpResult {
  * Only the remaining away budget is simulated; anything beyond it is discarded
  * rather than simulated, so a farm left alone overnight is greeted with a good
  * morning rather than a week of dead customers. The budget is shared with the
- * alarm loop via `state.awayMinutes`, so live ticking and catch-up cannot both
+ * alarm loop via `state.awayMs`, so live ticking and catch-up cannot both
  * spend it.
  */
 export function catchUp(state: FarmState, nowMs: number): CatchUpResult {
+  const speed = speedOf(state);
   const elapsedMs = Math.max(0, nowMs - state.lastRealMs);
-  const elapsedMinutes = Math.floor((elapsedMs * speedOf(state)) / REAL_MS_PER_TICK);
+
+  // The away budget is spent in real time, so it means the same thing at every
+  // speed. Only the unspent part of the gap is simulated.
+  const budgetMs = Math.max(0, OFFLINE_CAP_REAL_MS - state.awayMs);
+  const usableMs = Math.min(elapsedMs, budgetMs);
+
+  const elapsedMinutes = Math.min(
+    MAX_TICKS_PER_CATCHUP,
+    Math.floor((usableMs * speed) / REAL_MS_PER_TICK),
+  );
 
   if (elapsedMinutes <= 0) {
     // Hold the marker steady rather than advancing it, or at slow speeds the
     // remainder would be discarded on every call and the clock would crawl.
+    if (elapsedMs > budgetMs) {
+      state.awayMs += usableMs;
+      state.paused = state.awayMs >= OFFLINE_CAP_REAL_MS;
+      state.lastRealMs = nowMs;
+    }
     return { simulated: 0, skipped: 0, summary: null };
   }
-  // Credit only the whole game-minutes consumed, so the leftover fraction of a
-  // second carries forward instead of being rounded away.
-  state.lastRealMs += (elapsedMinutes * REAL_MS_PER_TICK) / speedOf(state);
 
-  const budget = Math.max(0, OFFLINE_CAP_MINUTES - state.awayMinutes);
-  const simulated = Math.min(elapsedMinutes, budget);
-  const skipped = elapsedMinutes - simulated;
+  // Credit only the real time actually converted into whole game-minutes, so the
+  // leftover fraction of a second carries forward instead of being rounded away.
+  const consumedMs = (elapsedMinutes * REAL_MS_PER_TICK) / speed;
+  state.lastRealMs += consumedMs;
+  state.awayMs += consumedMs;
+
+  const simulated = elapsedMinutes;
+  // Whatever real time fell outside the budget is discarded, expressed in the
+  // game-minutes it would have been worth.
+  const skipped = Math.floor(((elapsedMs - usableMs) * speed) / REAL_MS_PER_TICK);
 
   const before = snapshotForSummary(state);
   const eventsBefore = state.events.length;
 
   advance(state, simulated);
 
-  state.awayMinutes += simulated;
-  state.paused = state.awayMinutes >= OFFLINE_CAP_MINUTES;
+  state.paused = state.awayMs >= OFFLINE_CAP_REAL_MS;
+  if (skipped > 0) state.lastRealMs = nowMs;
 
   // Short gaps are just normal play; don't narrate them.
   if (simulated < 5) {
@@ -92,7 +112,7 @@ export function catchUp(state: FarmState, nowMs: number): CatchUpResult {
     logEvent(
       state,
       "system",
-      `The farm dozed off after ${OFFLINE_CAP_MINUTES} minutes on its own. Time has resumed.`,
+      `The farm dozed off after ${Math.round(OFFLINE_CAP_REAL_MS / 60000)} minutes on its own. Time has resumed.`,
     );
   }
   return { simulated, skipped, summary };
@@ -103,14 +123,14 @@ export function catchUp(state: FarmState, nowMs: number): CatchUpResult {
  * world un-pauses. Called once per tool invocation, after catch-up.
  */
 export function markPlayerContact(state: FarmState, nowMs: number): void {
-  state.awayMinutes = 0;
+  state.awayMs = 0;
   state.paused = false;
   state.lastRealMs = nowMs;
 }
 
-/** Game-minutes of live ticking still allowed before the world pauses. */
+/** Real milliseconds of live ticking still allowed before the world pauses. */
 export function remainingAwayBudget(state: FarmState): number {
-  return Math.max(0, OFFLINE_CAP_MINUTES - state.awayMinutes);
+  return Math.max(0, OFFLINE_CAP_REAL_MS - state.awayMs);
 }
 
 interface SummarySnapshot {

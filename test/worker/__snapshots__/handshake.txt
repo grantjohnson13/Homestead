@@ -297,14 +297,14 @@
       {
         "name": "set_speed",
         "title": "Change how fast the world runs",
-        "description": "Sets how many game-minutes pass per real second. Normal is 1 — a radish takes about twenty real seconds. At 4 the same radish takes five seconds, Wren walks four times as fast, and customers come and go four times as often.\n\nUseful settings: 0.5, 1, 2, 4, 8 (anything from 0.25 to 8 works).\n\nThe whole world scales together, so this changes only how quickly you watch things happen, not how hard the game is. Turn it up when the player wants to see the farm run, and back down when they want time to think. Nothing is lost either way.",
+        "description": "Sets how many game-minutes pass per real second. Normal is 1 — a radish takes about twenty real seconds. At 4 the same radish takes five seconds, Wren walks four times as fast, and customers come and go four times as often.\n\nUseful settings: 0.5, 1, 2, 5, 15, 60, 360 (anything from 0.25 to 360 works).\n\nThe whole world scales together, so this changes only how quickly you watch things happen, not how hard the game is. Turn it up when the player wants to see the farm run, and back down when they want time to think. Nothing is lost either way.",
         "inputSchema": {
           "type": "object",
           "properties": {
             "speed": {
               "type": "number",
               "exclusiveMinimum": 0,
-              "description": "Game-minutes per real second. 1 is normal; 8 is the maximum."
+              "description": "Game-minutes per real second. 1 is normal; 360 is the maximum."
             }
           },
           "required": [

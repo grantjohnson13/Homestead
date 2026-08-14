@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { OFFLINE_CAP_MINUTES, REAL_MS_PER_TICK } from "../../src/sim/constants.ts";
+import { OFFLINE_CAP_REAL_MS, REAL_MS_PER_TICK } from "../../src/sim/constants.ts";
+
+/** The away budget expressed in game-minutes at normal speed. */
+const CAP_MINUTES = OFFLINE_CAP_REAL_MS / REAL_MS_PER_TICK;
 import {
   advance,
   catchUp,
@@ -119,9 +122,9 @@ describe("offline catch-up", () => {
     const farm = createFarm(5, 0);
     const result = catchUp(farm, 10_000 * REAL_MS_PER_TICK);
 
-    expect(result.simulated).toBe(OFFLINE_CAP_MINUTES);
-    expect(result.skipped).toBe(10_000 - OFFLINE_CAP_MINUTES);
-    expect(farm.clock).toBe(OFFLINE_CAP_MINUTES);
+    expect(result.simulated).toBe(CAP_MINUTES);
+    expect(result.skipped).toBe(10_000 - CAP_MINUTES);
+    expect(farm.clock).toBe(CAP_MINUTES);
     expect(farm.paused).toBe(true);
   });
 

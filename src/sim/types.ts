@@ -186,12 +186,15 @@ export interface FarmState {
   /** Wall-clock ms at the last tick, used to catch up after an absence. */
   lastRealMs: number;
   /**
-   * Game-minutes simulated since the player last did anything. The alarm loop
-   * and offline catch-up draw on the same OFFLINE_CAP_MINUTES budget, so an
-   * absence costs two game-hours whether the world was ticking live or was
-   * fast-forwarded on return — never both.
+   * Real milliseconds of ticking spent since the player last did anything. The
+   * alarm loop and offline catch-up draw on the same OFFLINE_CAP_REAL_MS
+   * budget, so an absence costs the same whether the world was ticking live or
+   * was fast-forwarded on return — never both.
+   *
+   * Real time rather than game-minutes, because the budget has to mean the same
+   * thing at 0.5x as at 360x.
    */
-  awayMinutes: number;
+  awayMs: number;
   /** True once the away budget is spent and the world has stopped. */
   paused: boolean;
 

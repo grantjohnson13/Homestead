@@ -23,6 +23,7 @@ import {
   patienceRemaining,
   plotProgressFraction,
   plotStage,
+  sellableGoods,
   speedOf,
   upgradeCatalogue,
   type FarmState,
@@ -123,6 +124,15 @@ export interface FarmSnapshot {
   stand: Record<string, number>;
   /** Your asking price per unit, and the market reference for comparison. */
   prices: { good: string; yourPrice: number; referencePrice: number }[];
+  /**
+   * Why the road is quiet, when it is. Nobody walks out to a farm with nothing
+   * to sell, and without saying so the farm just goes silent for no visible
+   * reason — which is exactly how it feels like a bug rather than a rule.
+   */
+  standStatus: {
+    open: boolean;
+    reason: string;
+  };
   /** Recent customers who left without buying, and why. */
   lostSales: LostSaleSnapshot[];
   /** Everything investable, with current level and the next price. */
@@ -180,6 +190,7 @@ export function snapshot(state: FarmState): FarmSnapshot {
       yourPrice: priceOf(state, good),
       referencePrice: GOODS[good].basePrice,
     })),
+    standStatus: standStatus(state),
     upgrades: upgradeCatalogue(state),
     lostSales: state.lostSales.map((lost) => ({
       at: lost.at,
@@ -247,6 +258,37 @@ function plotSnapshot(plot: FarmState["plots"][number]): PlotSnapshot {
     minutesToReady:
       crop && !ready ? Math.max(0, Math.ceil(crop.growMinutes - plot.progress)) : null,
   };
+}
+
+/**
+ * Whether anyone is likely to turn up, and if not, why not.
+ *
+ * The commonest way for a farm to stall is silently: nothing harvested, nothing
+ * in the barn, so nobody comes, so no income, so nothing gets planted. Naming
+ * the cause turns a mysterious quiet road into an obvious next move.
+ */
+function standStatus(state: FarmState): { open: boolean; reason: string } {
+  const sellable = sellableGoods(state);
+  if (sellable.length === 0) {
+    return {
+      open: false,
+      reason:
+        "Nobody is coming — the farm has nothing to sell. Grow or collect something, and " +
+        "customers will start turning up again.",
+    };
+  }
+
+  const onStand = Object.values(state.stand).reduce((sum, n) => sum + n, 0);
+  if (onStand === 0) {
+    return {
+      open: false,
+      reason:
+        "The stand is bare, though the barn is not. Queue a restock task so there is something " +
+        "out front to buy.",
+    };
+  }
+
+  return { open: true, reason: "The stand is open for business." };
 }
 
 /** Static map description — included only by get_farm_state, since it never changes. */
@@ -338,7 +380,7 @@ export function describeFarm(snap: FarmSnapshot): string {
       );
     }
   } else {
-    lines.push("Nobody at the stand right now.");
+    lines.push(`Nobody at the stand right now. ${snap.standStatus.reason}`);
   }
 
   if (snap.lostSales.length > 0) {
