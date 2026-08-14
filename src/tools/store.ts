@@ -37,6 +37,8 @@ export async function withFarm<T>(
 
   if (!state) {
     state = createFarm(makeSeed(now), now);
+  } else {
+    migrate(state);
   }
 
   // Read the cursor *before* catching up: everything that happened during the
@@ -51,6 +53,43 @@ export async function withFarm<T>(
   await store.write(state);
 
   return { state, result, caughtUp, eventCursor };
+}
+
+/**
+ * Brings a farm saved by an older build up to the current shape.
+ *
+ * Farms persist indefinitely by design, so a save can predate any field added
+ * since. Anything missing is filled with what `createFarm` would have used —
+ * without this, a farm saved before the pricing model would throw the first time
+ * a customer walked out, because `lostSales` was undefined.
+ */
+export function migrate(state: FarmState): FarmState {
+  const fallback = createFarm(state.seed ?? 1, state.lastRealMs ?? 0);
+
+  if (!state.prices || typeof state.prices !== "object") state.prices = fallback.prices;
+  if (!Array.isArray(state.lostSales)) state.lostSales = [];
+  if (!Array.isArray(state.events)) state.events = [];
+  if (typeof state.eventsLogged !== "number") state.eventsLogged = state.events.length;
+  if (typeof state.awayMinutes !== "number") state.awayMinutes = 0;
+  if (!state.counters || typeof state.counters !== "object") state.counters = {};
+  if (!Array.isArray(state.certificates)) state.certificates = [];
+  if (!state.stand || typeof state.stand !== "object") state.stand = {};
+
+  // Customers from before the pricing model carry an offer instead of a ceiling.
+  for (const customer of state.customers ?? []) {
+    const legacy = customer as unknown as { offer?: number; tolerance?: number };
+    if (typeof customer.maxPrice !== "number") {
+      customer.maxPrice = legacy.tolerance ?? legacy.offer ?? 1;
+    }
+  }
+
+  // Any good the price list has never heard of falls back to its reference.
+  for (const [good, price] of Object.entries(fallback.prices)) {
+    if (typeof state.prices[good] !== "number") state.prices[good] = price;
+  }
+
+  state.version = fallback.version;
+  return state;
 }
 
 /** A store backed by a plain variable. Used by tests and by local development. */
