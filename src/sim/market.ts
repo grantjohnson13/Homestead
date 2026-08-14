@@ -27,12 +27,7 @@ function byReputation(reputation: number, atMin: number, atMid: number, atMax: n
 }
 
 export function arrivalIntervalMean(reputation: number): number {
-  const scale = byReputation(
-    reputation,
-    CUSTOMERS.intervalAtMinRep,
-    1,
-    CUSTOMERS.intervalAtMaxRep,
-  );
+  const scale = byReputation(reputation, CUSTOMERS.intervalAtMinRep, 1, CUSTOMERS.intervalAtMaxRep);
   return Math.max(1, CUSTOMERS.baseIntervalMinutes * scale);
 }
 
@@ -83,7 +78,8 @@ export function tickCustomers(state: FarmState): void {
   if (state.clock < state.nextCustomerAt) return;
 
   // Reschedule regardless, so a full stand doesn't cause a backlog burst.
-  state.nextCustomerAt = state.clock + poissonInterval(state, arrivalIntervalMean(state.reputation));
+  state.nextCustomerAt =
+    state.clock + poissonInterval(state, arrivalIntervalMean(state.reputation));
 
   if (state.customers.length >= CUSTOMERS.maxWaiting) return;
 
@@ -119,7 +115,8 @@ export function spawnCustomer(state: FarmState): Customer {
 
   const taken = new Set(state.customers.map((c) => `${c.spot.x},${c.spot.y}`));
   const spot =
-    CUSTOMER_SPOTS.find((s) => !taken.has(`${s.x},${s.y}`)) ?? (CUSTOMER_SPOTS[0] as (typeof CUSTOMER_SPOTS)[number]);
+    CUSTOMER_SPOTS.find((s) => !taken.has(`${s.x},${s.y}`)) ??
+    (CUSTOMER_SPOTS[0] as (typeof CUSTOMER_SPOTS)[number]);
 
   return {
     id: nextId(state, "customer"),
@@ -249,7 +246,11 @@ export function sellToCustomer(
       );
       return { kind: "walked_out", customer, reputationDelta: delta };
     }
-    logEvent(state, "customer", `${customer.name} shook their head at ${price}g but is still waiting.`);
+    logEvent(
+      state,
+      "customer",
+      `${customer.name} shook their head at ${price}g but is still waiting.`,
+    );
     return {
       kind: "declined",
       customer,

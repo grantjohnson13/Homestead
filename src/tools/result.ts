@@ -51,7 +51,10 @@ export function buildResult(state: FarmState, options: BuildResultOptions): Call
   if (options.awaySummary) sections.push(options.awaySummary);
   sections.push(options.summary);
   if (events.length > 0) {
-    const heading = omitted > 0 ? `Since your last look (${omitted} earlier lines omitted):` : "Since your last look:";
+    const heading =
+      omitted > 0
+        ? `Since your last look (${omitted} earlier lines omitted):`
+        : "Since your last look:";
     sections.push(`${heading}\n${events.map((e) => `- ${e}`).join("\n")}`);
   }
   sections.push(describeFarm(snap));

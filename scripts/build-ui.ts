@@ -37,9 +37,7 @@ function embedPayload(): string {
       height: MAP_HEIGHT,
       art: MAP_ART,
     },
-    crops: Object.fromEntries(
-      Object.values(CROPS).map((crop) => [crop.id, { name: crop.name }]),
-    ),
+    crops: Object.fromEntries(Object.values(CROPS).map((crop) => [crop.id, { name: crop.name }])),
   };
   // </script> inside a JSON literal would close the enclosing script tag.
   return `window.__HOMESTEAD__ = ${JSON.stringify(payload).replace(/</g, "\\u003c")};`;

@@ -230,6 +230,11 @@ body {
   animation: float 1.6s ease-in-out infinite alternate;
 }
 
+/* Goods in hand bob slightly out of phase with the action icon. */
+.carried {
+  animation: float 1.9s ease-in-out infinite alternate-reverse;
+}
+
 @keyframes float {
   from {
     translate: 0 0;

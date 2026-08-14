@@ -45,9 +45,9 @@ describe("farm view build", () => {
   });
 
   it("rejects a build that smuggles in an external reference", () => {
-    expect(() =>
-      assertSelfContained('<img src="https://cdn.example.com/tile.png">'),
-    ).toThrow(/self-contained/i);
+    expect(() => assertSelfContained('<img src="https://cdn.example.com/tile.png">')).toThrow(
+      /self-contained/i,
+    );
     expect(() => assertSelfContained("<style>@import url(x);</style>")).toThrow(/self-contained/i);
   });
 
@@ -97,6 +97,23 @@ describe("farm view build", () => {
 
   it("respects reduced motion", () => {
     expect(html).toContain("prefers-reduced-motion");
+  });
+
+  it("is laid out to work down to a narrow phone", () => {
+    // The sidebar stacks under the farm below this width, and the board scales
+    // with its container rather than a fixed pixel size.
+    expect(html).toMatch(/@media \(max-width: 6\d\dpx\)/);
+    expect(html).toContain("width: 100%");
+    expect(html).toContain("viewport-fit=cover");
+    // Nothing may impose a width the phone cannot honour. `max-width` is a cap
+    // rather than a floor, so the lookbehind lets it through.
+    expect(html).not.toMatch(/min-width:\s*[4-9]\d\dpx/);
+    expect(html).not.toMatch(/(?<!-)\bwidth:\s*[4-9]\d\dpx/);
+  });
+
+  it("honours host safe-area insets", () => {
+    expect(html).toContain("--safe-top");
+    expect(html).toContain("--safe-bottom");
   });
 
   it("stays small enough to ship in a tool result", () => {

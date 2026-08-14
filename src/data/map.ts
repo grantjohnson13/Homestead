@@ -34,15 +34,7 @@ export const MAP_ART: readonly string[] = [
   "ffffffffffffffff",
 ];
 
-export const TILE_TYPES = [
-  "grass",
-  "path",
-  "plot",
-  "water",
-  "building",
-  "stand",
-  "fence",
-] as const;
+export const TILE_TYPES = ["grass", "path", "plot", "water", "building", "stand", "fence"] as const;
 export type TileType = (typeof TILE_TYPES)[number];
 
 /** Which building a `building` tile belongs to, for tooltips and art. */

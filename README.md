@@ -3,10 +3,10 @@
 A cozy farming game you play entirely by talking to Claude.
 
 There is no app to click. You connect Homestead to Claude as a custom connector,
-say *"show me my farm"*, and from then on you run the place by conversation:
+say _"show me my farm"_, and from then on you run the place by conversation:
 
 > **You:** Till three beds and put tomatoes in, then feed the chickens.
-> **Claude:** *(calls `assign_tasks`)* Wren's on it — she's heading out to plot 1
+> **Claude:** _(calls `assign_tasks`)_ Wren's on it — she's heading out to plot 1
 > now. The farm view below updates as she works.
 
 On the farm lives **Wren**, your farmhand. You don't drive her directly; you give
@@ -98,39 +98,39 @@ or just switch to a new key.
 
 Talk to Claude. It has the tools; you have the ideas. Things worth trying:
 
-- *"What's the most profitable thing I can grow right now?"*
-- *"Till plots 1 through 4, plant strawberries, and water them."*
-- *"Who's at the stand? Can we fill their order?"*
-- *"Offer Marta 120 for the lot."*
-- *"Buy a cow. Name her Custard."*
-- *"What happened while I was gone?"*
+- _"What's the most profitable thing I can grow right now?"_
+- _"Till plots 1 through 4, plant strawberries, and water them."_
+- _"Who's at the stand? Can we fill their order?"_
+- _"Offer Marta 120 for the lot."_
+- _"Buy a cow. Name her Custard."_
+- _"What happened while I was gone?"_
 
 A few rules the game will hold you to:
 
-| Rule | Why it bites |
-| --- | --- |
+| Rule                                     | Why it bites                                                      |
+| ---------------------------------------- | ----------------------------------------------------------------- |
 | Plots must be **tilled** before planting | Queue the till first — `assign_tasks` will tell you if you forgot |
-| Crops grow only while **watered** | A dry plot stalls. It never dies, it just waits |
-| Customers buy from the **farm stand** | Harvests land in the barn, so queue a `restock` task |
-| Wren has **stamina** | Work her flat and she'll rest before taking more on |
-| Animals produce only while **fed** | And an unfed animal gets grumpy, and a grumpy one skips |
+| Crops grow only while **watered**        | A dry plot stalls. It never dies, it just waits                   |
+| Customers buy from the **farm stand**    | Harvests land in the barn, so queue a `restock` task              |
+| Wren has **stamina**                     | Work her flat and she'll rest before taking more on               |
+| Animals produce only while **fed**       | And an unfed animal gets grumpy, and a grumpy one skips           |
 
 `get_almanac` has the full economics — Claude will read it rather than guess.
 
 ## The tools
 
-| Tool | What it does |
-| --- | --- |
-| `get_farm_state` | The whole farm: plots, crops, animals, Wren, inventory, customers |
-| `get_almanac` | Static reference: crop economics, animal costs, shop prices, rules |
-| `assign_tasks` | Queue work for Wren, in order, validated as a batch |
-| `clear_task_queue` | Drop everything pending |
-| `reorder_task_queue` | Promote a task to the front |
-| `buy_supplies` | Seeds, feed and livestock, delivered instantly |
-| `list_waiting_customers` | Who's waiting, what they want, whether you can serve them |
-| `sell_to_customer` | Accept an offer, or counter it |
-| `rename` | Rename Wren or any animal |
-| `new_farm` | Start over (requires `confirm: true`) |
+| Tool                     | What it does                                                       |
+| ------------------------ | ------------------------------------------------------------------ |
+| `get_farm_state`         | The whole farm: plots, crops, animals, Wren, inventory, customers  |
+| `get_almanac`            | Static reference: crop economics, animal costs, shop prices, rules |
+| `assign_tasks`           | Queue work for Wren, in order, validated as a batch                |
+| `clear_task_queue`       | Drop everything pending                                            |
+| `reorder_task_queue`     | Promote a task to the front                                        |
+| `buy_supplies`           | Seeds, feed and livestock, delivered instantly                     |
+| `list_waiting_customers` | Who's waiting, what they want, whether you can serve them          |
+| `sell_to_customer`       | Accept an offer, or counter it                                     |
+| `rename`                 | Rename Wren or any animal                                          |
+| `new_farm`               | Start over (requires `confirm: true`)                              |
 
 Every tool that changes anything returns `{summary, events, state}` plus the farm
 view. `events` is what happened since your last call, which is how Claude can
@@ -154,7 +154,7 @@ The pieces that matter:
   tick count it produces the same farm, every time. No wall-clock reads, no
   `Math.random()`. That is what makes it testable, replayable, and safe to
   fast-forward after an absence.
-- **The server is authoritative.** The farm view is a *view*; it never mutates
+- **The server is authoritative.** The farm view is a _view_; it never mutates
   anything, and it can rebuild itself completely from one `get_farm_state` call,
   because the host may unmount and recreate the iframe at any moment.
 - **One Durable Object per farm.** It owns the state and runs an alarm loop so
@@ -172,7 +172,7 @@ it's planted and watered — fast feedback matters more than realism here, becau
 you're having a conversation, not waiting on a crop.
 
 When you go quiet, the world keeps running for up to **two game-hours** and then
-pauses. Come back and you'll get a *"while you were away"* summary. A farm left
+pauses. Come back and you'll get a _"while you were away"_ summary. A farm left
 alone overnight is greeted with a good morning, not a week of missed customers.
 
 ## Development

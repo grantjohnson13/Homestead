@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { OFFLINE_CAP_MINUTES, REAL_MS_PER_TICK } from "../../src/sim/constants.ts";
-import { advance, catchUp, chance, createFarm, poissonInterval, randInt } from "../../src/sim/index.ts";
+import {
+  advance,
+  catchUp,
+  chance,
+  createFarm,
+  poissonInterval,
+  randInt,
+} from "../../src/sim/index.ts";
 import { assignOrThrow, makeFarm } from "./helpers.ts";
 
 /**

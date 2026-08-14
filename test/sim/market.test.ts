@@ -17,10 +17,7 @@ import {
 import { makeFarm } from "./helpers.ts";
 
 /** Puts a specific, fully-stocked customer at the stand. */
-function stageCustomer(
-  farm: FarmState,
-  overrides: Partial<Customer> = {},
-): Customer {
+function stageCustomer(farm: FarmState, overrides: Partial<Customer> = {}): Customer {
   const customer: Customer = {
     id: "customer_test",
     name: "Testy",

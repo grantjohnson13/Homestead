@@ -188,9 +188,9 @@ describe("host context", () => {
     });
     await host.settle();
 
-    expect(
-      host.document.documentElement.style.getPropertyValue("--color-text-primary"),
-    ).toBe("rgb(1, 2, 3)");
+    expect(host.document.documentElement.style.getPropertyValue("--color-text-primary")).toBe(
+      "rgb(1, 2, 3)",
+    );
   });
 
   it("applies safe-area insets", async () => {

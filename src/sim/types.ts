@@ -14,15 +14,7 @@ export const STATE_VERSION = 1;
 export type Facing = "up" | "down" | "left" | "right";
 
 export type TaskType =
-  | "till"
-  | "plant"
-  | "water"
-  | "harvest"
-  | "feed"
-  | "collect"
-  | "restock"
-  | "pet"
-  | "idle";
+  "till" | "plant" | "water" | "harvest" | "feed" | "collect" | "restock" | "pet" | "idle";
 
 /**
  * Targets accepted by tasks:
@@ -150,13 +142,7 @@ export interface Customer {
   spot: Point;
 }
 
-export type EventKind =
-  | "crop"
-  | "animal"
-  | "customer"
-  | "wren"
-  | "economy"
-  | "system";
+export type EventKind = "crop" | "animal" | "customer" | "wren" | "economy" | "system";
 
 export interface GameEvent {
   /** Game-clock minute the event happened at. */

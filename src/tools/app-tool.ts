@@ -44,10 +44,5 @@ export function registerFarmViewTool<InputArgs extends ZodRawShapeCompat>(
   // The public signature above is the precise one; these casts only bridge to
   // registerAppTool's own generic plumbing, which infers InputArgs from an
   // optional field and so cannot line up with an already-bound type parameter.
-  return registerAppTool(
-    server,
-    name,
-    { ...config, _meta: FARM_VIEW_META } as never,
-    cb as never,
-  );
+  return registerAppTool(server, name, { ...config, _meta: FARM_VIEW_META } as never, cb as never);
 }

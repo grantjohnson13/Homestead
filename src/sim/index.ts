@@ -8,7 +8,22 @@
 
 export * from "./types.ts";
 export * from "./constants.ts";
-export { createFarm, addAnimal, animalCapacityLeft, countItem, addItem, takeItem, hasItems, logEvent, eventsSince, findPlot, findAnimal, nextId, WATER_CAN_CAPACITY, DEFAULT_WREN_NAME } from "./farm.ts";
+export {
+  createFarm,
+  addAnimal,
+  animalCapacityLeft,
+  countItem,
+  addItem,
+  takeItem,
+  hasItems,
+  logEvent,
+  eventsSince,
+  findPlot,
+  findAnimal,
+  nextId,
+  WATER_CAN_CAPACITY,
+  DEFAULT_WREN_NAME,
+} from "./farm.ts";
 export {
   advance,
   catchUp,
@@ -17,8 +32,22 @@ export {
   msUntilNextTick,
   type CatchUpResult,
 } from "./tick.ts";
-export { tickPlots, waterPlot, isHarvestable, plotStage, plotProgressFraction, harvestPlot } from "./crops.ts";
-export { tickAnimals, isFed, feedAnimal, petAnimal, moodLabel, minutesToProduce } from "./livestock.ts";
+export {
+  tickPlots,
+  waterPlot,
+  isHarvestable,
+  plotStage,
+  plotProgressFraction,
+  harvestPlot,
+} from "./crops.ts";
+export {
+  tickAnimals,
+  isFed,
+  feedAnimal,
+  petAnimal,
+  moodLabel,
+  minutesToProduce,
+} from "./livestock.ts";
 export {
   tickCustomers,
   spawnCustomer,

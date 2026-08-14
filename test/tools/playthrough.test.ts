@@ -48,7 +48,10 @@ describe("a full playthrough via tool calls only", () => {
   });
 
   it("buys seed from the shop", async () => {
-    const response = record("buy", await game.call("buy_supplies", { item: "radish_seed", quantity: 6 }));
+    const response = record(
+      "buy",
+      await game.call("buy_supplies", { item: "radish_seed", quantity: 6 }),
+    );
     expect(response.isError).toBe(false);
     expect(response.state.gold).toBeLessThan(500);
     expect(response.state.inventory["radish_seed"]).toBeGreaterThanOrEqual(6);
@@ -112,7 +115,10 @@ describe("a full playthrough via tool calls only", () => {
   });
 
   it("restocks the stand from the barn", async () => {
-    record("restock", await game.call("assign_tasks", { tasks: [{ type: "restock", target: "all" }] }));
+    record(
+      "restock",
+      await game.call("assign_tasks", { tasks: [{ type: "restock", target: "all" }] }),
+    );
     game.passTime(40);
 
     const response = record("post-restock", await game.call("get_farm_state"));
@@ -227,7 +233,10 @@ describe("tool-level error handling", () => {
       });
     });
 
-    const response = await game.call("sell_to_customer", { customerId: "customer_1", accept: true });
+    const response = await game.call("sell_to_customer", {
+      customerId: "customer_1",
+      accept: true,
+    });
     expect(response.isError).toBe(true);
     expect(response.text).toContain("short 2 pumpkins");
     expect(response.text).toContain("restock");

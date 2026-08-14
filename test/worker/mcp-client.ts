@@ -23,10 +23,7 @@ export interface RawExchange {
 const ACCEPT = "application/json, text/event-stream";
 
 /** Posts a JSON-RPC message and returns both the parsed result and the raw wire text. */
-export async function rpcRaw(
-  path: string,
-  message: Record<string, unknown>,
-): Promise<RawExchange> {
+export async function rpcRaw(path: string, message: Record<string, unknown>): Promise<RawExchange> {
   const response = await SELF.fetch(`https://homestead.test${path}`, {
     method: "POST",
     headers: {

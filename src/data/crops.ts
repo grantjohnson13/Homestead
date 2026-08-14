@@ -8,14 +8,7 @@
  * across its life, to finish on schedule. An unwatered crop stalls; it never dies.
  */
 
-export const CROP_IDS = [
-  "radish",
-  "lettuce",
-  "tomato",
-  "corn",
-  "strawberry",
-  "pumpkin",
-] as const;
+export const CROP_IDS = ["radish", "lettuce", "tomato", "corn", "strawberry", "pumpkin"] as const;
 
 export type CropId = (typeof CROP_IDS)[number];
 

@@ -120,7 +120,9 @@ function registerAssignTasks(server: McpServer, store: FarmStore): void {
               target: z
                 .string()
                 .optional()
-                .describe('Plot id, animal id/name, animal group, or good id — see the description.'),
+                .describe(
+                  "Plot id, animal id/name, animal group, or good id — see the description.",
+                ),
               crop: z
                 .enum(CROP_IDS)
                 .optional()
@@ -297,7 +299,13 @@ function registerBuySupplies(server: McpServer, store: FarmStore): void {
         summary: `Bought ${result.qty} x ${result.itemId} for ${result.cost}g. ${state.gold}g left.`,
         eventCursor,
         awaySummary: takeAwaySummary(state),
-        extra: { purchased: result.itemId, quantity: result.qty, cost: result.cost, gold: state.gold, ...(result.names ? { names: result.names } : {}) },
+        extra: {
+          purchased: result.itemId,
+          quantity: result.qty,
+          cost: result.cost,
+          gold: state.gold,
+          ...(result.names ? { names: result.names } : {}),
+        },
       });
     },
   );
@@ -388,7 +396,9 @@ function registerSellToCustomer(server: McpServer, store: FarmStore): void {
           return refusal(
             `The stand can't fill that order — it is short ${result.missing
               .map((m) => describeGood(m.good, m.qty))
-              .join(" and ")}. Queue a restock task to carry stock over from the barn; they are still waiting.`,
+              .join(
+                " and ",
+              )}. Queue a restock task to carry stock over from the barn; they are still waiting.`,
             { missing: result.missing, state: snapshot(state) },
           );
 
@@ -498,7 +508,9 @@ function registerNewFarm(server: McpServer, store: FarmStore): void {
       inputSchema: {
         confirm: z
           .boolean()
-          .describe("Must be true. Guards against wiping a farm on a casual mention of restarting."),
+          .describe(
+            "Must be true. Guards against wiping a farm on a casual mention of restarting.",
+          ),
         wrenName: z.string().min(1).max(40).optional().describe("Name for the new farmhand."),
       },
       annotations: { destructiveHint: true, idempotentHint: false, openWorldHint: false },

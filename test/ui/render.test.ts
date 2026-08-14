@@ -184,9 +184,30 @@ describe("Wren", () => {
 
   it("shows a splash while watering", async () => {
     const state = fixtureState();
-    state.wren = { ...state.wren, currentTask: { type: "water", target: "plot_1", action: "water" } };
+    state.wren = {
+      ...state.wren,
+      currentTask: { type: "water", target: "plot_1", action: "water" },
+    };
     const h = await mount(state);
     expect(h.document.querySelectorAll("#actors .splash").length).toBe(1);
+  });
+
+  it("shows the goods she is carrying", async () => {
+    const state = fixtureState();
+    state.wren = {
+      ...state.wren,
+      carrying: [{ good: "tomato", qty: 4 }],
+      currentTask: { type: "restock", action: "walking" },
+    };
+    const h = await mount(state);
+    expect(h.document.querySelectorAll("#actors .carried").length).toBe(1);
+  });
+
+  it("shows nothing carried when her hands are empty", async () => {
+    const state = fixtureState();
+    state.wren = { ...state.wren, carrying: [] };
+    const h = await mount(state);
+    expect(h.document.querySelectorAll("#actors .carried").length).toBe(0);
   });
 
   it("shows she is asleep on her feet when exhausted", async () => {
@@ -390,9 +411,7 @@ describe("tooltips", () => {
     const h = await mount(state);
 
     const hits = h.document.querySelectorAll("#hits .tile-hit");
-    expect(hits.length).toBe(
-      state.plots.length + state.animals.length + state.customers.length,
-    );
+    expect(hits.length).toBe(state.plots.length + state.animals.length + state.customers.length);
   });
 
   it("makes hit areas keyboard reachable", async () => {

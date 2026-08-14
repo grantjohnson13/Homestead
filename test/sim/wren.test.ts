@@ -193,7 +193,10 @@ describe("Wren: stamina", () => {
   it("picks the queue back up after resting", () => {
     const farm = makeFarm();
     farm.wren.stamina = STAMINA.refuseBelow + 1;
-    assignOrThrow(farm, [{ type: "till", target: "plot_1" }, { type: "till", target: "plot_2" }]);
+    assignOrThrow(farm, [
+      { type: "till", target: "plot_1" },
+      { type: "till", target: "plot_2" },
+    ]);
 
     advance(farm, 600);
     expect(plotOf(farm, "plot_1").tilled).toBe(true);

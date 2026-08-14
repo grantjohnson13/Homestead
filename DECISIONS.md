@@ -17,16 +17,16 @@ brief).
 
 ### Pinned versions
 
-| Package                            | Version          | Why                                                                                                             |
-| ---------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------- |
-| `@modelcontextprotocol/sdk`        | `1.30.0`         | Current stable. Ships `WebStandardStreamableHTTPServerTransport` (see below), which is what makes Workers viable. |
-| `@modelcontextprotocol/ext-apps`   | `1.7.5`          | Current stable MCP Apps SDK. Implements spec `2026-01-26`.                                                       |
-| `zod`                              | `^3.25.76`       | Peer of the MCP SDK's tool-schema layer. Only used server-side.                                                  |
-| `typescript`                       | `5.9.3` (exact)  | TS `7.0.2` (the Go port) is out but the lint/type ecosystem is still stabilising on it. Deliberately conservative. |
-| `vitest`                           | `^4.1.10`        | Required by `@cloudflare/vitest-pool-workers@0.21.3` (peer: `^4.1.0`).                                           |
-| `@cloudflare/vitest-pool-workers`  | `^0.21.3`        | Runs tests inside real workerd — needed to test Durable Objects + alarms for M3.                                 |
-| `wrangler`                         | `^4.123.0`       | Current. Peer-requires `@cloudflare/workers-types@^5`.                                                           |
-| `@cloudflare/workers-types`        | `^5.20260814.1`  | v4 conflicts with wrangler 4.123's peer range; v5 is required.                                                   |
+| Package                           | Version         | Why                                                                                                                |
+| --------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `@modelcontextprotocol/sdk`       | `1.30.0`        | Current stable. Ships `WebStandardStreamableHTTPServerTransport` (see below), which is what makes Workers viable.  |
+| `@modelcontextprotocol/ext-apps`  | `1.7.5`         | Current stable MCP Apps SDK. Implements spec `2026-01-26`.                                                         |
+| `zod`                             | `^3.25.76`      | Peer of the MCP SDK's tool-schema layer. Only used server-side.                                                    |
+| `typescript`                      | `5.9.3` (exact) | TS `7.0.2` (the Go port) is out but the lint/type ecosystem is still stabilising on it. Deliberately conservative. |
+| `vitest`                          | `^4.1.10`       | Required by `@cloudflare/vitest-pool-workers@0.21.3` (peer: `^4.1.0`).                                             |
+| `@cloudflare/vitest-pool-workers` | `^0.21.3`       | Runs tests inside real workerd — needed to test Durable Objects + alarms for M3.                                   |
+| `wrangler`                        | `^4.123.0`      | Current. Peer-requires `@cloudflare/workers-types@^5`.                                                             |
+| `@cloudflare/workers-types`       | `^5.20260814.1` | v4 conflicts with wrangler 4.123's peer range; v5 is required.                                                     |
 
 ### MCP Apps protocol — verified facts
 
@@ -82,7 +82,7 @@ method (e.g. `callServerTool`) before `ui/initialize` has resolved "can race the
 handshake on strict hosts and **leave the iframe permanently hidden**."
 
 Consequence for us: the farm view must not poll, resize, or call any tool until
-`ui/initialize` has resolved *and* `ui/notifications/initialized` has been sent.
+`ui/initialize` has resolved _and_ `ui/notifications/initialized` has been sent.
 Polling is armed only from the post-handshake callback. Likewise, one-shot
 notification handlers (`tool-result`, `tool-input`) must be registered **before**
 connecting, or the host may have already fired them.
@@ -195,7 +195,7 @@ for the current stage was met" and separately gives each crop a total watering
 count. Modelling per-stage water budgets with four named stages and a separate
 total would double-specify the same thing.
 
-Instead: a crop needs `growMinutes` of *watered* time. One watering tops moisture
+Instead: a crop needs `growMinutes` of _watered_ time. One watering tops moisture
 up to a single segment (`growMinutes / waterNeeds`), capped, so it cannot be
 front-loaded by watering five times in a row. Growth accrues only while moisture
 lasts; when it runs dry, growth stalls until someone waters again. The four
@@ -224,7 +224,7 @@ queue. One extra task per batch is management, not busywork.
 
 `registerAppResource` supports declaring `csp.resourceDomains` /
 `csp.connectDomains`. We declare neither, because the farm view has no external
-references at all — a property asserted by the build script *and* by two separate
+references at all — a property asserted by the build script _and_ by two separate
 tests. Declaring a CSP we do not need would only create the impression that
 external loads are supported, which on claude.ai they are not reliably.
 
@@ -242,7 +242,7 @@ long-term — and it would publish a public endpoint on an account that is not
 theirs. Verifying against a throwaway URL is worth less than leaving a clean
 one-command handoff.
 
-What *was* verified instead, and is arguably stronger than a curl against a
+What _was_ verified instead, and is arguably stronger than a curl against a
 deployed URL:
 
 - `wrangler deploy --dry-run` builds the real production bundle (1260 KiB raw,
@@ -263,3 +263,79 @@ curl https://<printed-url>/health     # expect {"ok": true, "service": "homestea
 
 Then add `https://<printed-url>/mcp/<a-private-key>` to Claude as a custom
 connector. Nothing else is outstanding.
+
+---
+
+## 2026-08-14 — M6: balance
+
+Method: `scripts/balance-report.ts` runs three scripted players across five seeds
+at four horizons and prints the spread. The assertions in
+`test/sim/balance.test.ts` lock in the band that pass produced.
+
+### Wren was the bottleneck, and it made expansion strictly worse
+
+The first balance run was damning: the "aggressive expander" finished _behind_
+the cautious player at every horizon, and both trailed a farm that simply did
+less. The cause was Wren's throughput, not the crop economics.
+
+Original numbers: 3-tick tasks, 1.6 stamina drained per work tick, and a
+four-charge watering can. A single pass over a modest field cost more than her
+entire stamina bar, so she was permanently exhausted, and the four-charge can
+sent her back to the well constantly — walking swallowed the day.
+
+Changed:
+
+|                      | Before                       | After                        |
+| -------------------- | ---------------------------- | ---------------------------- |
+| `workDrainPerTick`   | 1.6                          | 0.9                          |
+| `walkDrainPerTick`   | 0.4                          | 0.25                         |
+| `restRecoverPerTick` | 2.2                          | 3.0                          |
+| task work ticks      | till 3 / water 2 / harvest 3 | till 2 / water 1 / harvest 2 |
+| `WATER_CAN_CAPACITY` | 4                            | 8                            |
+
+Stamina should be a reason to pace yourself, not a wall. Walking still dominates
+the cost of a job, which keeps _where you send her_ the interesting decision.
+
+### One farmhand cannot sustain twelve plots, and that is correct
+
+Even after the retune, keeping all twelve plots watered needs roughly twice
+Wren's sustainable output — every plot wants water every 20–30 game-minutes, and
+a full pass costs more than that. Rather than inflate her throughput until the
+constraint vanished, this was kept: the field is deliberately larger than one
+person can farm, and choosing how much to take on _is_ the management game.
+Around six to eight plots is the practical ceiling, which the scripted expander
+now targets.
+
+### The most expensive crop is a trap, deliberately
+
+A pumpkin sells for 220g — by far the highest sticker price — but ties up a plot
+for 150 watered minutes, making it worse per minute than a tomato that bears
+twice. The first version of the scripted expander picked crops by sell price and
+went broke doing it.
+
+This is kept as a feature, and `test/sim/balance.test.ts` asserts it stays true.
+It gives `get_almanac` a real job: the almanac computes gold-per-minute, so a
+player who asks Claude what to plant beats a player who buys the shiniest seed.
+The scripted expander was changed to model an informed player, since that is who
+the game is actually for.
+
+### Where the balance landed (600 game-minutes, mean of five seeds)
+
+| player         | gold | Δ    | rep | sales |
+| -------------- | ---- | ---- | --- | ----- |
+| cautious       | 737  | +237 | 66  | 11    |
+| aggressive     | 799  | +299 | 54  | 11    |
+| animal-focused | 727  | +227 | 96  | 27    |
+
+All three profitable, inside a factor of two of each other, none explosive, and
+each with a distinct shape: the expander invests through a long dry start and
+overtakes late; the animal farm compounds reputation fastest; the cautious farm
+is never in danger. That is the spread the milestone asked for.
+
+### The brief's 30-game-minute horizon is too short to measure
+
+Thirty game-minutes is barely one radish cycle plus walking, and no strategy has
+sold anything by then. The three profiles are therefore asserted at 30 minutes
+only for what is observable there — nobody goes into debt, nobody loses
+reputation, Wren is still standing — and the economic claims are asserted at 600
+minutes where they can actually be seen.

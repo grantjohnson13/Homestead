@@ -72,7 +72,8 @@ export const MECHANICS = {
   growth:
     "A crop needs its full grow time in *watered* minutes. Each watering tops the plot's moisture up to one segment (grow time / waterings). When moisture runs out, growth stalls until someone waters again. Crops never die from neglect — they just wait.",
   plots: `The field has ${PLOT_IDS.length} plots (plot_1..plot_${PLOT_IDS.length}) on a ${MAP_WIDTH}x${MAP_HEIGHT} farm. A plot must be tilled before planting. Harvesting a single-harvest crop returns the plot to tilled; multi-harvest crops regrow in place until their last harvest.`,
-  water: "Watering is a Wren task. She walks to the well only if she is out of water; assume watering a plot costs a couple of minutes.",
+  water:
+    "Watering is a Wren task. She walks to the well only if she is out of water; assume watering a plot costs a couple of minutes.",
   animals: `Animals produce only while fed. Feeding costs feed from your inventory and lasts ${ANIMALS.chicken.feedLastsMinutes} game-minutes. Unfed animals stop producing and their mood slides: ${MOOD_BANDS.map((b) => b.mood).join(" -> ")}. A grumpy animal sometimes skips a production cycle entirely. Feeding and petting restore mood. Animals never die.`,
   wren: `Wren works one task at a time from a FIFO queue, walking there first. She has ${STAMINA.max} stamina; tasks drain it and she recovers by idling at the farmhouse. Below ${STAMINA.refuseBelow} she refuses new work until she has rested back to ${STAMINA.resumeAt}.`,
   selling:

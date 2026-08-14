@@ -9,33 +9,44 @@
 export const TICKS_PER_ALARM = 5;
 export const REAL_MS_PER_TICK = 1000;
 
-/** Wren's stamina economy. */
+/**
+ * Wren's stamina economy.
+ *
+ * Tuned in M6. The first pass drained 1.6/tick against 3-tick tasks, which meant
+ * a single pass over the field cost more than her whole stamina bar: she was
+ * permanently exhausted and any strategy beyond four plots was strictly worse
+ * than doing less. Stamina should be a reason to pace yourself, not a wall.
+ */
 export const STAMINA = {
   max: 100,
   /** Drained per tick of actual work (not walking). */
-  workDrainPerTick: 1.6,
+  workDrainPerTick: 0.9,
   /** Drained per tick of walking. */
-  walkDrainPerTick: 0.4,
+  walkDrainPerTick: 0.25,
   /** Recovered per tick while idle at the farmhouse. */
-  restRecoverPerTick: 2.2,
+  restRecoverPerTick: 3,
   /** Recovered per tick while idle anywhere else. */
-  idleRecoverPerTick: 0.8,
+  idleRecoverPerTick: 1.2,
   /** Below this she refuses to start new work. */
   refuseBelow: 8,
   /** She will not accept work again until rested back to here. */
   resumeAt: 30,
 } as const;
 
-/** How long each task's *work* phase takes, in ticks, once Wren has arrived. */
+/**
+ * How long each task's *work* phase takes, in ticks, once Wren has arrived.
+ * Walking dominates the cost of a job, so these are deliberately short — the
+ * interesting decision is what to send her to, not how long she stands there.
+ */
 export const TASK_WORK_TICKS = {
-  till: 3,
-  plant: 2,
-  water: 2,
-  harvest: 3,
-  feed: 2,
-  collect: 2,
-  restock: 3,
-  pet: 2,
+  till: 2,
+  plant: 1,
+  water: 1,
+  harvest: 2,
+  feed: 1,
+  collect: 1,
+  restock: 2,
+  pet: 1,
   idle: 1,
 } as const;
 

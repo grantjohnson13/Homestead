@@ -30,12 +30,7 @@ export const TASK_TYPES: readonly TaskType[] = [
   "idle",
 ];
 
-const PLOT_TASKS: ReadonlySet<TaskType> = new Set<TaskType>([
-  "till",
-  "plant",
-  "water",
-  "harvest",
-]);
+const PLOT_TASKS: ReadonlySet<TaskType> = new Set<TaskType>(["till", "plant", "water", "harvest"]);
 
 export const ANIMAL_GROUPS = ["all_chickens", "all_cows", "all_animals"] as const;
 export type AnimalGroup = (typeof ANIMAL_GROUPS)[number];
@@ -139,7 +134,10 @@ function validateOne(
 ): TaskVerdict {
   const type = input.type as TaskType;
   if (!TASK_TYPES.includes(type)) {
-    return reject(index, `Unknown task type "${input.type}". Valid types: ${TASK_TYPES.join(", ")}.`);
+    return reject(
+      index,
+      `Unknown task type "${input.type}". Valid types: ${TASK_TYPES.join(", ")}.`,
+    );
   }
 
   if (PLOT_TASKS.has(type)) {
@@ -324,9 +322,7 @@ export function compileLegs(state: FarmState, task: QueuedTask): Leg[] | null {
     case "harvest": {
       const tile = task.target ? plotTile(task.target) : undefined;
       if (!tile) return null;
-      return [
-        { x: tile.x, y: tile.y, workTicks: TASK_WORK_TICKS[task.type], action: task.type },
-      ];
+      return [{ x: tile.x, y: tile.y, workTicks: TASK_WORK_TICKS[task.type], action: task.type }];
     }
 
     case "water": {
@@ -366,7 +362,12 @@ export function compileLegs(state: FarmState, task: QueuedTask): Leg[] | null {
 
     case "restock":
       return [
-        { x: ANCHORS.barn.x, y: ANCHORS.barn.y, workTicks: TASK_WORK_TICKS.restock, action: "load" },
+        {
+          x: ANCHORS.barn.x,
+          y: ANCHORS.barn.y,
+          workTicks: TASK_WORK_TICKS.restock,
+          action: "load",
+        },
         {
           x: ANCHORS.stand.x,
           y: ANCHORS.stand.y,
@@ -403,8 +404,7 @@ export function animalsForLeg(
     return state.animals.filter((a) => a.kind === kind);
   }
   return state.animals.filter(
-    (a) =>
-      a.kind === kind && (a.id === target || a.name.toLowerCase() === target.toLowerCase()),
+    (a) => a.kind === kind && (a.id === target || a.name.toLowerCase() === target.toLowerCase()),
   );
 }
 

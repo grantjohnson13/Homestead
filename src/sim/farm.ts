@@ -76,8 +76,14 @@ export function createFarm(seed: number, nowMs: number): FarmState {
   return state;
 }
 
-/** How many plots Wren can water before she must refill at the well. */
-export const WATER_CAN_CAPACITY = 4;
+/**
+ * How many plots Wren can water before she must refill at the well.
+ *
+ * Raised from 4 in M6: with a 12-plot field needing regular re-watering, a
+ * four-charge can sent her back to the well constantly and walking swallowed the
+ * whole day. Eight covers a full pass over the field with one trip.
+ */
+export const WATER_CAN_CAPACITY = 8;
 
 export function nextId(state: FarmState, prefix: string): string {
   const next = (state.counters[prefix] ?? 0) + 1;

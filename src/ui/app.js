@@ -521,6 +521,13 @@
       iconHolder.appendChild(icon);
     }
 
+    // Carried goods ride along at her side, so a restock trip reads as a trip.
+    if (wren.carrying && wren.carrying.length > 0) {
+      var crate = useSprite("ic-box", -6, 8, 12);
+      crate.setAttribute("class", "carried");
+      iconHolder.appendChild(crate);
+    }
+
     var walking = !!(task && task.action === "walking");
     var working = !!(task && task.action !== "walking");
     wrenNode.setAttribute(

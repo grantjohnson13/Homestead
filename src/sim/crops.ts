@@ -23,7 +23,11 @@ export function tickPlots(state: FarmState): void {
     if (before < crop.growMinutes && plot.progress >= crop.growMinutes) {
       logEvent(state, "crop", `${crop.name} in ${plot.id} is ready to harvest!`);
     } else if (plot.moisture === 0 && plot.progress < crop.growMinutes) {
-      logEvent(state, "crop", `${plot.id} has dried out — the ${crop.name.toLowerCase()} has stopped growing.`);
+      logEvent(
+        state,
+        "crop",
+        `${plot.id} has dried out — the ${crop.name.toLowerCase()} has stopped growing.`,
+      );
     }
   }
 }

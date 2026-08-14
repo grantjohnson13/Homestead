@@ -53,7 +53,11 @@ function startNextTask(state: FarmState): void {
     const task = wren.queue.shift() as QueuedTask;
     const legs = compileLegs(state, task);
     if (!legs || legs.length === 0) {
-      logEvent(state, "wren", `${wren.name} skipped a ${task.type} task — it no longer makes sense.`);
+      logEvent(
+        state,
+        "wren",
+        `${wren.name} skipped a ${task.type} task — it no longer makes sense.`,
+      );
       continue;
     }
     const first = legs[0] as Leg;
@@ -164,7 +168,11 @@ function applyLegEffect(state: FarmState, active: ActiveTask, leg: Leg): void {
       plot.progress = 0;
       plot.moisture = 0;
       plot.harvestsDone = 0;
-      logEvent(state, "crop", `${wren.name} planted ${CROPS[crop].name.toLowerCase()} in ${plot.id}.`);
+      logEvent(
+        state,
+        "crop",
+        `${wren.name} planted ${CROPS[crop].name.toLowerCase()} in ${plot.id}.`,
+      );
       return;
     }
 
@@ -219,7 +227,11 @@ function applyLegEffect(state: FarmState, active: ActiveTask, leg: Leg): void {
         }
       }
       if (fedCount > 0) {
-        logEvent(state, "animal", `${wren.name} fed ${fedCount} ${kind}${fedCount === 1 ? "" : "s"}.`);
+        logEvent(
+          state,
+          "animal",
+          `${wren.name} fed ${fedCount} ${kind}${fedCount === 1 ? "" : "s"}.`,
+        );
       } else if (animals.length > 0) {
         logEvent(state, "animal", `${wren.name} had no feed for the ${kind}s.`);
       }
@@ -231,7 +243,11 @@ function applyLegEffect(state: FarmState, active: ActiveTask, leg: Leg): void {
       const animals = animalsForLeg(state, task, kind);
       for (const animal of animals) petAnimal(animal);
       if (animals.length > 0) {
-        logEvent(state, "animal", `${wren.name} spent a minute with the ${kind}s. ${wrenLine(state, "animals")}`);
+        logEvent(
+          state,
+          "animal",
+          `${wren.name} spent a minute with the ${kind}s. ${wrenLine(state, "animals")}`,
+        );
       }
       return;
     }
@@ -269,7 +285,11 @@ function applyLegEffect(state: FarmState, active: ActiveTask, leg: Leg): void {
         }
       }
       if (carried === 0) {
-        logEvent(state, "wren", `${wren.name} found nothing in the barn worth carrying to the stand.`);
+        logEvent(
+          state,
+          "wren",
+          `${wren.name} found nothing in the barn worth carrying to the stand.`,
+        );
       }
       return;
     }

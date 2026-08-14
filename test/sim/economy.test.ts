@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { ANIMALS } from "../../src/data/animals.ts";
-import { FEED_BULK_PRICE, FEED_BULK_SIZE, FEED_UNIT_PRICE, feedPrice } from "../../src/data/shop.ts";
+import {
+  FEED_BULK_PRICE,
+  FEED_BULK_SIZE,
+  FEED_UNIT_PRICE,
+  feedPrice,
+} from "../../src/data/shop.ts";
 import { CROPS } from "../../src/data/crops.ts";
 import { STARTING } from "../../src/sim/constants.ts";
 import { buySupplies, countItem, quote } from "../../src/sim/index.ts";
@@ -74,9 +79,7 @@ describe("buying supplies", () => {
     const outcome = buySupplies(farm, "chicken", ANIMALS.chicken.capacity - 1);
 
     expect(outcome.ok).toBe(true);
-    expect(farm.animals.filter((a) => a.kind === "chicken")).toHaveLength(
-      ANIMALS.chicken.capacity,
-    );
+    expect(farm.animals.filter((a) => a.kind === "chicken")).toHaveLength(ANIMALS.chicken.capacity);
     expect(buySupplies(farm, "chicken", 1).ok).toBe(false);
   });
 
