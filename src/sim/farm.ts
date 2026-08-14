@@ -1,0 +1,145 @@
+/**
+ * Farm construction and the small helpers that everything else builds on.
+ */
+
+import { ANIMALS, STARTING_MOOD, defaultAnimalName, type AnimalKind } from "../data/animals.ts";
+import { FEED_ITEM_ID } from "../data/items.ts";
+import { PLOT_TILES, WREN_HOME } from "../data/map.ts";
+import { CUSTOMERS, MAX_EVENTS, REPUTATION, STAMINA, STARTING } from "./constants.ts";
+import { poissonInterval } from "./rng.ts";
+import { STATE_VERSION, type Animal, type EventKind, type FarmState } from "./types.ts";
+
+export const DEFAULT_WREN_NAME = "Wren";
+
+export function createFarm(seed: number, nowMs: number): FarmState {
+  const state: FarmState = {
+    version: STATE_VERSION,
+    seed,
+    rngCursor: 0,
+
+    clock: 0,
+    lastRealMs: nowMs,
+    paused: false,
+
+    gold: STARTING.gold,
+    reputation: REPUTATION.start,
+    inventory: { ...STARTING.seeds, [FEED_ITEM_ID]: STARTING.feed },
+    stand: {},
+
+    plots: PLOT_TILES.map((tile) => ({
+      id: tile.plotId as string,
+      x: tile.x,
+      y: tile.y,
+      tilled: false,
+      crop: null,
+      progress: 0,
+      moisture: 0,
+      harvestsDone: 0,
+    })),
+
+    animals: [],
+
+    wren: {
+      name: DEFAULT_WREN_NAME,
+      x: WREN_HOME.x,
+      y: WREN_HOME.y,
+      facing: "down",
+      stamina: STAMINA.max,
+      exhausted: false,
+      queue: [],
+      current: null,
+      waterCharges: WATER_CAN_CAPACITY,
+      carrying: [],
+    },
+
+    customers: [],
+    events: [],
+    nextCustomerAt: 0,
+    certificates: [],
+    counters: {},
+    awaySummary: null,
+  };
+
+  for (let i = 0; i < STARTING.chickens; i++) addAnimal(state, "chicken");
+  for (let i = 0; i < STARTING.cows; i++) addAnimal(state, "cow");
+
+  state.nextCustomerAt = poissonInterval(state, CUSTOMERS.baseIntervalMinutes);
+
+  return state;
+}
+
+/** How many plots Wren can water before she must refill at the well. */
+export const WATER_CAN_CAPACITY = 4;
+
+export function nextId(state: FarmState, prefix: string): string {
+  const next = (state.counters[prefix] ?? 0) + 1;
+  state.counters[prefix] = next;
+  return `${prefix}_${next}`;
+}
+
+export function addAnimal(state: FarmState, kind: AnimalKind, name?: string): Animal {
+  const existing = state.animals.filter((a) => a.kind === kind).length;
+  const animal: Animal = {
+    id: nextId(state, kind),
+    name: name ?? defaultAnimalName(kind, existing),
+    kind,
+    mood: STARTING_MOOD,
+    fedUntil: 0,
+    produceProgress: 0,
+    pending: 0,
+  };
+  state.animals.push(animal);
+  return animal;
+}
+
+export function animalCapacityLeft(state: FarmState, kind: AnimalKind): number {
+  const housed = state.animals.filter((a) => a.kind === kind).length;
+  return Math.max(0, ANIMALS[kind].capacity - housed);
+}
+
+/* ------------------------------------------------------------------ items -- */
+
+export function countItem(bag: Record<string, number>, id: string): number {
+  return bag[id] ?? 0;
+}
+
+export function addItem(bag: Record<string, number>, id: string, qty: number): void {
+  if (qty <= 0) return;
+  bag[id] = countItem(bag, id) + qty;
+}
+
+/** Removes up to `qty`; returns how many were actually taken. */
+export function takeItem(bag: Record<string, number>, id: string, qty: number): number {
+  const have = countItem(bag, id);
+  const taken = Math.min(have, Math.max(0, qty));
+  if (taken <= 0) return 0;
+  if (have - taken <= 0) delete bag[id];
+  else bag[id] = have - taken;
+  return taken;
+}
+
+export function hasItems(bag: Record<string, number>, id: string, qty: number): boolean {
+  return countItem(bag, id) >= qty;
+}
+
+/* ----------------------------------------------------------------- events -- */
+
+export function logEvent(state: FarmState, kind: EventKind, text: string): void {
+  state.events.push({ at: Math.floor(state.clock), kind, text });
+  if (state.events.length > MAX_EVENTS) {
+    state.events.splice(0, state.events.length - MAX_EVENTS);
+  }
+}
+
+/** Events recorded at or after `since` — what a tool result should narrate. */
+export function eventsSince(state: FarmState, since: number) {
+  return state.events.filter((e) => e.at >= since);
+}
+
+export function findPlot(state: FarmState, plotId: string) {
+  return state.plots.find((p) => p.id === plotId);
+}
+
+export function findAnimal(state: FarmState, id: string) {
+  return state.animals.find((a) => a.id === id || a.name.toLowerCase() === id.toLowerCase());
+}

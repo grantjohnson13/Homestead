@@ -24,7 +24,22 @@ export interface GoodDef {
 
 const ANIMAL_GOODS: Record<AnimalGoodId, GoodDef> = {
   egg: { id: "egg", name: "Egg", plural: "eggs", basePrice: 20 },
+  // Mass noun: "3 milk", never "3 milks".
   milk: { id: "milk", name: "Milk", plural: "milk", basePrice: 45 },
+};
+
+/**
+ * English plurals are irregular enough that appending "s" produces "tomatos"
+ * and "corns", so they are spelled out. `corn` is a mass noun and does not
+ * inflect at all.
+ */
+const CROP_PLURALS: Record<CropId, string> = {
+  radish: "radishes",
+  lettuce: "lettuces",
+  tomato: "tomatoes",
+  corn: "corn",
+  strawberry: "strawberries",
+  pumpkin: "pumpkins",
 };
 
 export const GOODS: Record<GoodId, GoodDef> = {
@@ -34,7 +49,7 @@ export const GOODS: Record<GoodId, GoodDef> = {
       {
         id,
         name: CROPS[id].name,
-        plural: `${CROPS[id].name.toLowerCase()}s`,
+        plural: CROP_PLURALS[id],
         basePrice: CROPS[id].sellPrice,
       } satisfies GoodDef,
     ]),
@@ -50,6 +65,14 @@ export function isGoodId(value: string): value is GoodId {
 export function describeGood(id: GoodId, qty: number): string {
   const def = GOODS[id];
   return `${qty} ${qty === 1 ? def.name.toLowerCase() : def.plural}`;
+}
+
+/** "an egg", "a pumpkin" — for singular narration where a count would read oddly. */
+export function describeGoodWithArticle(id: GoodId): string {
+  const word = GOODS[id].name.toLowerCase();
+  // "milk" is a mass noun and takes no article.
+  if (GOODS[id].plural === word && word === "milk") return "milk";
+  return `${/^[aeiou]/.test(word) ? "an" : "a"} ${word}`;
 }
 
 /** Seeds and feed: the consumable side of the inventory. */
