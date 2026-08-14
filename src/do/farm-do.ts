@@ -13,7 +13,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { createMcpServer } from "../server/mcp-server.ts";
 import type { Env } from "../server/env.ts";
 import { REAL_MS_PER_TICK, TICKS_PER_ALARM } from "../sim/constants.ts";
-import { catchUp, remainingAwayBudget, type FarmState } from "../sim/index.ts";
+import { catchUp, msUntilNextTick, remainingAwayBudget, type FarmState } from "../sim/index.ts";
 import type { FarmStore } from "../tools/store.ts";
 
 const FARM_KEY = "farm";
@@ -87,15 +87,23 @@ export class FarmDurableObject extends DurableObject<Env> {
     await this.store.write(state);
 
     if (remainingAwayBudget(state) > 0) {
-      await this.scheduleTick();
+      await this.scheduleTick(state);
     }
   }
 
-  /** Arms the next tick, unless one is already pending. */
-  private async scheduleTick(): Promise<void> {
+  /**
+   * Arms the next tick, unless one is already pending.
+   *
+   * The interval shortens as the farm's speed rises, so a fast world still
+   * animates smoothly instead of jumping in large strides between alarms.
+   */
+  private async scheduleTick(state?: FarmState | null): Promise<void> {
     const existing = await this.ctx.storage.getAlarm();
     if (existing !== null) return;
-    await this.ctx.storage.setAlarm(Date.now() + ALARM_INTERVAL_MS);
+
+    const farm = state ?? (await this.store.read());
+    const delay = farm ? msUntilNextTick(farm, TICKS_PER_ALARM) : ALARM_INTERVAL_MS;
+    await this.ctx.storage.setAlarm(Date.now() + delay);
   }
 
   /* ---------------------------------------------------- test/ops surface -- */

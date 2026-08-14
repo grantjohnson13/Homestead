@@ -23,6 +23,7 @@ import {
   patienceRemaining,
   plotProgressFraction,
   plotStage,
+  speedOf,
   upgradeCatalogue,
   type FarmState,
   type FarmTime,
@@ -108,6 +109,8 @@ export interface FarmSnapshot {
   clock: number;
   /** The same instant as a farm day-clock, for anything player-facing. */
   time: FarmTime;
+  /** Game-minutes per real second. 1 is normal. */
+  speed: number;
   gold: number;
   reputation: number;
   certificates: string[];
@@ -131,6 +134,7 @@ export function snapshot(state: FarmState): FarmSnapshot {
   return {
     clock: Math.floor(state.clock),
     time: farmTime(state.clock),
+    speed: speedOf(state),
     gold: state.gold,
     reputation: Math.round(state.reputation),
     certificates: [...state.certificates],
@@ -271,7 +275,9 @@ export function mapDescription() {
 export function describeFarm(snap: FarmSnapshot): string {
   const lines: string[] = [];
   lines.push(
-    `${snap.time.label} (${snap.time.partOfDay}) | ${snap.gold}g | reputation ${snap.reputation}/100${snap.paused ? " | (world was paused)" : ""}`,
+    `${snap.time.label} (${snap.time.partOfDay}) | ${snap.gold}g | reputation ${snap.reputation}/100` +
+      (snap.speed === 1 ? "" : ` | running at ${snap.speed}x`) +
+      (snap.paused ? " | (world was paused)" : ""),
   );
 
   const wren = snap.wren;

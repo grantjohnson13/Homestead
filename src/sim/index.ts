@@ -30,7 +30,10 @@ export {
   markPlayerContact,
   remainingAwayBudget,
   msUntilNextTick,
+  speedOf,
+  setSpeed,
   type CatchUpResult,
+  type SpeedUpdate,
 } from "./tick.ts";
 export {
   tickPlots,

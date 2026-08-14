@@ -5,7 +5,14 @@
 import { STARTING_MOOD, defaultAnimalName, type AnimalKind } from "../data/animals.ts";
 import { FEED_ITEM_ID, GOODS, GOOD_IDS } from "../data/items.ts";
 import { PLOT_TILES, WREN_HOME } from "../data/map.ts";
-import { CUSTOMERS, MAX_EVENTS, REPUTATION, STAMINA, STARTING } from "./constants.ts";
+import {
+  CUSTOMERS,
+  DEFAULT_SPEED,
+  MAX_EVENTS,
+  REPUTATION,
+  STAMINA,
+  STARTING,
+} from "./constants.ts";
 import { poissonInterval } from "./rng.ts";
 import { housingFor } from "./upgrades.ts";
 import {
@@ -25,6 +32,7 @@ export function createFarm(seed: number, nowMs: number): FarmState {
     rngCursor: 0,
 
     clock: 0,
+    speed: DEFAULT_SPEED,
     lastRealMs: nowMs,
     awayMinutes: 0,
     paused: false,

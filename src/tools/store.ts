@@ -69,6 +69,7 @@ export function migrate(state: FarmState): FarmState {
   if (!state.prices || typeof state.prices !== "object") state.prices = fallback.prices;
   if (!Array.isArray(state.lostSales)) state.lostSales = [];
   if (!state.upgrades || typeof state.upgrades !== "object") state.upgrades = {};
+  if (typeof state.speed !== "number" || state.speed <= 0) state.speed = fallback.speed;
   if (!Array.isArray(state.events)) state.events = [];
   if (typeof state.eventsLogged !== "number") state.eventsLogged = state.events.length;
   if (typeof state.awayMinutes !== "number") state.awayMinutes = 0;

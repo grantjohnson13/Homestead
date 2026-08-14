@@ -7,7 +7,15 @@
  * time in, which is what makes the whole sim replayable and testable.
  */
 
-import { MAX_EVENTS, OFFLINE_CAP_MINUTES, REAL_MS_PER_TICK } from "./constants.ts";
+import {
+  DEFAULT_SPEED,
+  MAX_EVENTS,
+  MAX_SPEED,
+  MIN_SPEED,
+  OFFLINE_CAP_MINUTES,
+  REAL_MS_PER_TICK,
+  SPEED_OPTIONS,
+} from "./constants.ts";
 import { tickPlots } from "./crops.ts";
 import { logEvent } from "./farm.ts";
 import { tickAnimals } from "./livestock.ts";
@@ -50,12 +58,16 @@ export interface CatchUpResult {
  */
 export function catchUp(state: FarmState, nowMs: number): CatchUpResult {
   const elapsedMs = Math.max(0, nowMs - state.lastRealMs);
-  const elapsedMinutes = Math.floor(elapsedMs / REAL_MS_PER_TICK);
+  const elapsedMinutes = Math.floor((elapsedMs * speedOf(state)) / REAL_MS_PER_TICK);
 
   if (elapsedMinutes <= 0) {
+    // Hold the marker steady rather than advancing it, or at slow speeds the
+    // remainder would be discarded on every call and the clock would crawl.
     return { simulated: 0, skipped: 0, summary: null };
   }
-  state.lastRealMs = nowMs;
+  // Credit only the whole game-minutes consumed, so the leftover fraction of a
+  // second carries forward instead of being rounded away.
+  state.lastRealMs += (elapsedMinutes * REAL_MS_PER_TICK) / speedOf(state);
 
   const budget = Math.max(0, OFFLINE_CAP_MINUTES - state.awayMinutes);
   const simulated = Math.min(elapsedMinutes, budget);
@@ -147,7 +159,37 @@ function summarize(
   return parts.join("\n");
 }
 
-/** Wall-clock ms until the farm should next be ticked. */
-export function msUntilNextTick(ticksPerAlarm: number): number {
-  return ticksPerAlarm * REAL_MS_PER_TICK;
+/** The farm's speed, clamped and defaulted for saves that predate the setting. */
+export function speedOf(state: FarmState): number {
+  const speed = state.speed;
+  if (typeof speed !== "number" || !Number.isFinite(speed) || speed <= 0) return DEFAULT_SPEED;
+  return Math.max(MIN_SPEED, Math.min(MAX_SPEED, speed));
+}
+
+export type SpeedUpdate = { ok: true; from: number; to: number } | { ok: false; reason: string };
+
+export function setSpeed(state: FarmState, nowMs: number, speed: number): SpeedUpdate {
+  if (!Number.isFinite(speed) || speed <= 0) {
+    return { ok: false, reason: `Speed must be a positive number, got ${String(speed)}.` };
+  }
+  if (speed < MIN_SPEED || speed > MAX_SPEED) {
+    return {
+      ok: false,
+      reason: `Speed must be between ${MIN_SPEED} and ${MAX_SPEED}. Try ${SPEED_OPTIONS.join(", ")}.`,
+    };
+  }
+
+  // Settle the world at the old rate first, or the elapsed time since the last
+  // tick would retroactively run at the new one.
+  catchUp(state, nowMs);
+  state.lastRealMs = nowMs;
+
+  const from = speedOf(state);
+  state.speed = speed;
+  return { ok: true, from, to: speed };
+}
+
+/** Wall-clock ms until the farm should next be ticked, at its current speed. */
+export function msUntilNextTick(state: FarmState, ticksPerAlarm: number): number {
+  return Math.max(250, (ticksPerAlarm * REAL_MS_PER_TICK) / speedOf(state));
 }

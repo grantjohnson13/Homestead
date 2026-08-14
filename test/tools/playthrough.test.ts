@@ -36,6 +36,7 @@ describe("a full playthrough via tool calls only", () => {
         "reorder_task_queue",
         "sell_to_customer",
         "set_prices",
+        "set_speed",
       ].sort(),
     );
   });

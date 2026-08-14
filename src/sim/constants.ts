@@ -10,6 +10,31 @@ export const TICKS_PER_ALARM = 5;
 export const REAL_MS_PER_TICK = 1000;
 
 /**
+ * How fast the world runs, as a multiple of one game-minute per real second.
+ *
+ * The scaling is deliberately uniform: crops, Wren, animals and customers all
+ * speed up together, so the balance holds at every setting. That works only
+ * because the stand sells itself now — when selling needed a per-customer
+ * decision, speeding the world up would have made customers expire faster than
+ * a person could answer. With a standing price list the player is never racing
+ * the clock, so faster is simply livelier.
+ */
+export const SPEED_OPTIONS = [0.5, 1, 2, 4, 8] as const;
+export type Speed = (typeof SPEED_OPTIONS)[number];
+
+export const DEFAULT_SPEED = 1;
+export const MIN_SPEED = 0.25;
+export const MAX_SPEED = 8;
+
+export const SPEED_LABELS: Record<string, string> = {
+  "0.5": "half speed — a slow afternoon",
+  "1": "normal — one game-minute per second",
+  "2": "brisk",
+  "4": "fast — the day rattles along",
+  "8": "very fast — blink and you'll miss it",
+};
+
+/**
  * Wren's stamina economy.
  *
  * Tuned in M6. The first pass drained 1.6/tick against 3-tick tasks, which meant

@@ -222,8 +222,17 @@
     markFresh();
   }
 
+  /** Poll floor, so a fast world is not sampled once every eight game-minutes. */
+  var POLL_MIN_MS = 600;
+
   function pollInterval() {
-    var base = document.visibilityState === "hidden" ? POLL_HIDDEN_MS : POLL_VISIBLE_MS;
+    if (document.visibilityState === "hidden") return Math.max(POLL_HIDDEN_MS, backoffMs);
+
+    // Sample proportionally faster as the world speeds up: the point of a higher
+    // speed is to watch things happen, and a fixed 2s poll would turn that into
+    // long teleports between frames rather than walking.
+    var speed = farm && typeof farm.speed === "number" && farm.speed > 0 ? farm.speed : 1;
+    var base = Math.max(POLL_MIN_MS, POLL_VISIBLE_MS / speed);
     return Math.max(base, backoffMs);
   }
 
@@ -884,6 +893,16 @@
     setText("stat-rep", farm.reputation);
     // The server computes the day-clock so this and the text fallback agree.
     setText("stat-clock", farm.time ? farm.time.label : "—");
+
+    // The speed pill only appears when the world is not running normally, so a
+    // default farm keeps a quiet header.
+    var speed = typeof farm.speed === "number" ? farm.speed : 1;
+    var speedPill = document.getElementById("stat-speed-pill");
+    if (speedPill) {
+      speedPill.style.display = speed === 1 ? "none" : "";
+      setText("stat-speed", speed + "x");
+      speedPill.classList.toggle("slow", speed < 1);
+    }
 
     var cert = document.getElementById("cert");
     var earned = farm.certificates && farm.certificates.length > 0;

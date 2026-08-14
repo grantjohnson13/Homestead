@@ -14,8 +14,10 @@ import { GOOD_IDS, describeGood } from "../data/items.ts";
 import { PLOT_IDS } from "../data/map.ts";
 import { SHOP_ITEMS } from "../data/shop.ts";
 import { UPGRADES, UPGRADE_IDS } from "../data/upgrades.ts";
+import { MAX_SPEED, MIN_SPEED, SPEED_LABELS, SPEED_OPTIONS } from "../sim/constants.ts";
 import {
   DEFAULT_WREN_NAME,
+  setSpeed,
   buySupplies,
   buyUpgrade,
   logEvent,
@@ -60,6 +62,7 @@ export function registerFarmTools(server: McpServer, store: FarmStore): void {
   registerBuySupplies(server, store);
   registerSetPrices(server, store);
   registerBuyUpgrade(server, store);
+  registerSetSpeed(server, store);
   registerListCustomers(server, store);
   registerSellToCustomer(server, store);
   registerRename(server, store);
@@ -372,6 +375,51 @@ function registerSetPrices(server: McpServer, store: FarmStore): void {
         eventCursor,
         awaySummary: takeAwaySummary(state),
         extra: { changes: result.changes, insights: pricingInsights(state) },
+      });
+    },
+  );
+}
+
+function registerSetSpeed(server: McpServer, store: FarmStore): void {
+  registerFarmViewTool(
+    server,
+    "set_speed",
+    {
+      title: "Change how fast the world runs",
+      description:
+        "Sets how many game-minutes pass per real second. Normal is 1 — a radish takes about " +
+        "twenty real seconds. At 4 the same radish takes five seconds, Wren walks four times as " +
+        "fast, and customers come and go four times as often.\n\n" +
+        `Useful settings: ${SPEED_OPTIONS.join(", ")} (anything from ${MIN_SPEED} to ${MAX_SPEED} works).\n\n` +
+        "The whole world scales together, so this changes only how quickly you watch things " +
+        "happen, not how hard the game is. Turn it up when the player wants to see the farm run, " +
+        "and back down when they want time to think. Nothing is lost either way.",
+      inputSchema: {
+        speed: z
+          .number()
+          .positive()
+          .describe(`Game-minutes per real second. 1 is normal; ${MAX_SPEED} is the maximum.`),
+      },
+    },
+    async ({ speed }) => {
+      const { state, result, eventCursor } = await withFarm(store, (farm) =>
+        setSpeed(farm, store.now(), speed),
+      );
+
+      if (!result.ok) return refusal(result.reason, { state: snapshot(state) });
+
+      const label = SPEED_LABELS[String(result.to)];
+      return buildResult(state, {
+        summary:
+          `The farm now runs at ${result.to}x` +
+          (label ? ` (${label})` : "") +
+          `, up from ${result.from}x.`.replace(
+            "up from",
+            result.to >= result.from ? "up from" : "down from",
+          ),
+        eventCursor,
+        awaySummary: takeAwaySummary(state),
+        extra: { speed: result.to, previousSpeed: result.from },
       });
     },
   );

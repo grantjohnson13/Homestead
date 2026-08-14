@@ -178,6 +178,11 @@ export interface FarmState {
 
   /** Game-minutes elapsed since the farm was created. */
   clock: number;
+  /**
+   * How many game-minutes pass per real second. Scales the whole world
+   * uniformly, so balance is unaffected — only how quickly you watch it happen.
+   */
+  speed: number;
   /** Wall-clock ms at the last tick, used to catch up after an absence. */
   lastRealMs: number;
   /**

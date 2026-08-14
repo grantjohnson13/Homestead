@@ -128,12 +128,24 @@ body {
 
 .stat {
   display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
+  align-items: center;
+  gap: 5px;
   background: var(--panel-2);
   border-radius: 999px;
-  padding: 2px 9px;
+  padding: 3px 10px 3px 7px;
   white-space: nowrap;
+  font-size: 14px;
+}
+
+/*
+  HUD glyphs are sized in `em` so they track the text beside them rather than
+  sitting small next to it — a coin should read as the same weight as the number
+  it labels.
+*/
+.stat .glyph {
+  width: 1.5em;
+  height: 1.5em;
+  vertical-align: middle;
 }
 
 .stat b {
@@ -181,6 +193,19 @@ body {
 .glyph.lg {
   width: 20px;
   height: 20px;
+}
+
+/* Speeding up is loud; slowing down is calm. */
+.stat.speed {
+  background: #f4d78a;
+  color: #6b4f1f;
+  font-weight: 650;
+}
+
+.stat.speed.slow {
+  background: var(--panel-2);
+  color: var(--ink-soft);
+  font-weight: 500;
 }
 
 .badge {
