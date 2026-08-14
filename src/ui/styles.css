@@ -706,11 +706,18 @@ button.stat.speed.fast .glyph {
   font-weight: 650;
 }
 
-/* Pips showing how far an upgrade has been taken. */
+/*
+  Pips showing how far an upgrade has been taken.
+
+  Their own row above the name: inline they competed with it for width and the
+  name truncated. With five levels there is also a plain "2/5" beside them,
+  since five small dots are quick to glance at but slow to count.
+*/
 .pips {
-  display: inline-flex;
-  gap: 2px;
-  margin-left: 4px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 2px;
 }
 
 .pip {
@@ -718,10 +725,19 @@ button.stat.speed.fast .glyph {
   height: 5px;
   border-radius: 50%;
   background: var(--line);
+  flex: none;
 }
 
 .pip.on {
   background: var(--good);
+}
+
+.pips .level {
+  margin-left: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
 }
 
 .upgrade.owned .name {

@@ -1303,13 +1303,17 @@
       row.appendChild(glyph(entry.icon, true));
 
       var body = el("div", "body");
-      var name = el("span", "name", entry.name);
+
+      // Level pips sit on their own row above the name. Inline, they competed
+      // with it for width and the name truncated to "Bigg…".
       var pips = el("span", "pips");
       for (var i = 0; i < entry.maxLevel; i++) {
         pips.appendChild(el("span", "pip" + (i < entry.level ? " on" : "")));
       }
-      name.appendChild(pips);
-      body.appendChild(name);
+      pips.appendChild(el("span", "level", entry.level + "/" + entry.maxLevel));
+      body.appendChild(pips);
+
+      body.appendChild(el("span", "name", entry.name));
       body.appendChild(el("span", "effect", entry.effect));
       row.appendChild(body);
 

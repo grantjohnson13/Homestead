@@ -649,6 +649,29 @@ describe("the side panel and ticker", () => {
     expect(Array.from(pips).every((p) => p.className.includes("on"))).toBe(true);
   });
 
+  it("puts the level indicator above the name, not beside it", async () => {
+    const state = fixtureState();
+    state.upgrades = state.upgrades.map((u, i) => (i === 0 ? { ...u, level: 2 } : u));
+    const h = await mount(state);
+
+    const body = h.document.querySelector("#upgrades .upgrade .body");
+    const children = Array.from(body?.children ?? []).map((n) => n.className);
+
+    // Pips first, then the name, so the name gets the full width.
+    expect(children[0]).toContain("pips");
+    expect(children[1]).toContain("name");
+    expect(body?.querySelector(".pips")?.contains(body.querySelector(".name"))).toBe(false);
+  });
+
+  it("spells out the level beside the pips", async () => {
+    const state = fixtureState();
+    state.upgrades = state.upgrades.map((u, i) => (i === 0 ? { ...u, level: 3 } : u));
+    const h = await mount(state);
+
+    // Five dots are quick to glance at but slow to count.
+    expect(h.document.querySelector("#upgrades .pips .level")?.textContent).toBe("3/5");
+  });
+
   it("says whether Wren is running the farm herself", async () => {
     const idle = fixtureState();
     idle.standingOrders = { ...idle.standingOrders, enabled: false };
