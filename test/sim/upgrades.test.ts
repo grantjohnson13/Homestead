@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ANIMALS } from "../../src/data/animals.ts";
-import { UPGRADES, UPGRADE_IDS } from "../../src/data/upgrades.ts";
+import { MAX_UPGRADE_LEVEL, UPGRADES, UPGRADE_IDS } from "../../src/data/upgrades.ts";
 import { CUSTOMERS } from "../../src/sim/constants.ts";
 import {
   addItem,
@@ -277,6 +277,53 @@ describe("upgrade catalogue sanity", () => {
       expect(def.blurb.length, id).toBeGreaterThan(15);
       expect(def.icon.length, id).toBeGreaterThan(2);
     }
+  });
+
+  it("gives every upgrade the same five levels", () => {
+    for (const id of UPGRADE_IDS) {
+      expect(UPGRADES[id].costs.length, id).toBe(MAX_UPGRADE_LEVEL);
+    }
+  });
+
+  it("keeps the top level a real commitment", () => {
+    for (const id of UPGRADE_IDS) {
+      const costs = UPGRADES[id].costs;
+      const last = costs[costs.length - 1] as number;
+      const everythingBefore = costs.slice(0, -1).reduce((sum, c) => sum + c, 0);
+      // The final level should cost more than the whole climb to reach it.
+      expect(last, id).toBeGreaterThan(everythingBefore);
+    }
+  });
+
+  it("compounds all the way to the top", () => {
+    const farm = makeFarm();
+    farm.gold = 10_000_000;
+    for (let i = 0; i < MAX_UPGRADE_LEVEL; i++) buyUpgrade(farm, "watering_can");
+
+    expect(levelOf(farm, "watering_can")).toBe(MAX_UPGRADE_LEVEL);
+    expect(waterCanCapacity(farm)).toBe(8 + MAX_UPGRADE_LEVEL * 4);
+    expect(buyUpgrade(farm, "watering_can").ok).toBe(false);
+  });
+
+  it("leaves a fully-upgraded farm still sane", () => {
+    const farm = makeFarm();
+    farm.gold = 10_000_000;
+    for (const id of UPGRADE_IDS) {
+      for (let i = 0; i < MAX_UPGRADE_LEVEL; i++) buyUpgrade(farm, id);
+    }
+
+    // Nothing may invert or run away at the ceiling.
+    expect(arrivalMultiplier(farm)).toBeGreaterThan(0);
+    expect(arrivalMultiplier(farm)).toBeLessThan(1);
+    expect(patienceMinutes(farm)).toBeGreaterThan(CUSTOMERS.patienceMinutes);
+    expect(willingnessBonus(farm)).toBeGreaterThan(1);
+    expect(moistureMultiplier(farm)).toBeGreaterThan(1);
+    expect(housingFor(farm, "chicken")).toBe(ANIMALS.chicken.capacity + MAX_UPGRADE_LEVEL * 2);
+    expect(housingFor(farm, "cow")).toBe(ANIMALS.cow.capacity + MAX_UPGRADE_LEVEL);
+
+    farm.standingOrders.enabled = true;
+    expect(() => advance(farm, 2000)).not.toThrow();
+    expect(farm.gold).toBeGreaterThanOrEqual(0);
   });
 
   it("makes every upgrade get more expensive as it levels", () => {

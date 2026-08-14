@@ -41,7 +41,28 @@
       </div>
 
       <aside class="side">
-        <section class="card">
+        <nav class="tabs" id="tabs" role="tablist">
+          <button class="tab" type="button" data-tab="wren" role="tab" aria-selected="true">
+            <svg class="glyph" aria-hidden="true"><use href="#ch-wren-down" /></svg>
+            <span>Wren</span>
+          </button>
+          <button class="tab" type="button" data-tab="stock" role="tab" aria-selected="false">
+            <svg class="glyph" aria-hidden="true"><use href="#ic-basket" /></svg>
+            <span>Stock</span>
+            <i class="alert" hidden></i>
+          </button>
+          <button class="tab" type="button" data-tab="market" role="tab" aria-selected="false">
+            <svg class="glyph" aria-hidden="true"><use href="#ic-stall" /></svg>
+            <span>Market</span>
+            <i class="alert" hidden></i>
+          </button>
+          <button class="tab" type="button" data-tab="invest" role="tab" aria-selected="false">
+            <svg class="glyph" aria-hidden="true"><use href="#ic-coin" /></svg>
+            <span>Invest</span>
+            <i class="alert" hidden></i>
+          </button>
+        </nav>
+        <section class="card panel" data-panel="wren">
           <h2>Farmhand</h2>
           <div class="wren-row">
             <span class="wren-name" id="wren-name">Wren</span>
@@ -54,28 +75,25 @@
           <ul class="queue" id="queue"></ul>
         </section>
 
-        <section class="card">
+        <section class="card panel" data-panel="stock" hidden>
           <h2>On the stand</h2>
           <div id="stand-stock" class="chips"></div>
           <h2 class="spaced">In the barn</h2>
           <div id="barn-stock" class="chips"></div>
         </section>
 
-        <section class="card">
+        <section class="card panel" data-panel="market" hidden>
           <h2>Your prices</h2>
           <div id="prices" class="chips"></div>
-        </section>
-
-        <section class="card">
-          <h2>Investments</h2>
-          <div id="upgrades"></div>
-        </section>
-
-        <section class="card">
-          <h2>At the stand</h2>
+          <h2 class="spaced">At the stand</h2>
           <div id="customers"></div>
           <h2 class="spaced">Lost sales</h2>
           <div id="lost-sales"></div>
+        </section>
+
+        <section class="card panel" data-panel="invest" hidden>
+          <h2>Investments</h2>
+          <div id="upgrades"></div>
         </section>
       </aside>
 

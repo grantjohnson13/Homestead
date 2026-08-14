@@ -979,6 +979,7 @@
     renderPrices();
     renderUpgrades();
     renderLostSales();
+    renderTabAlerts();
 
     var list = document.getElementById("customers");
     list.textContent = "";
@@ -1366,6 +1367,80 @@
      ===================================================================== */
 
   /* =====================================================================
+     Sidebar tabs
+     ===================================================================== */
+
+  var activeTab = "wren";
+
+  function bindTabs() {
+    var tabs = document.getElementById("tabs");
+    if (!tabs) return;
+
+    tabs.addEventListener("click", function (event) {
+      var button = event.target.closest ? event.target.closest(".tab") : null;
+      if (!button) return;
+      showTab(button.getAttribute("data-tab"));
+    });
+
+    showTab(activeTab);
+  }
+
+  function showTab(name) {
+    if (!name) return;
+    activeTab = name;
+
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (button) {
+      var selected = button.getAttribute("data-tab") === name;
+      button.setAttribute("aria-selected", selected ? "true" : "false");
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll(".panel"), function (panel) {
+      panel.hidden = panel.getAttribute("data-panel") !== name;
+    });
+
+    reportSize();
+  }
+
+  /**
+   * Dots on the tab bar, so a collapsed section can still say it needs you.
+   * Red for a problem, green for an opportunity.
+   */
+  function renderTabAlerts() {
+    var customers = farm.customers || [];
+    var blocked = customers.filter(function (c) {
+      return !c.canFulfill || !c.affordable;
+    }).length;
+
+    // Something is stuck in the barn while a customer waits for it out front.
+    var wanted = {};
+    customers.forEach(function (c) {
+      c.wants.forEach(function (w) {
+        wanted[w.good] = (wanted[w.good] || 0) + w.qty;
+      });
+    });
+    var stranded = Object.keys(wanted).some(function (good) {
+      return (farm.inventory[good] || 0) > 0 && (farm.stand[good] || 0) < wanted[good];
+    });
+
+    var affordable = (farm.upgrades || []).some(function (u) {
+      return u.nextCost !== null && farm.gold >= u.nextCost;
+    });
+
+    setAlert("stock", stranded, false);
+    setAlert("market", blocked > 0, false);
+    setAlert("invest", affordable, true);
+  }
+
+  function setAlert(tabName, on, good) {
+    var button = document.querySelector('.tab[data-tab="' + tabName + '"]');
+    if (!button) return;
+    var dot = button.querySelector(".alert");
+    if (!dot) return;
+    dot.hidden = !on;
+    dot.className = "alert" + (good ? " good" : "");
+  }
+
+  /* =====================================================================
      The speed control — the one thing the view is allowed to change
      ===================================================================== */
 
@@ -1426,6 +1501,7 @@
     mount.textContent = "";
     mount.appendChild(layers.board);
     tip = document.getElementById("tip");
+    bindTabs();
     bindSpeedButton();
 
     window.addEventListener("resize", reportSize);
