@@ -42,20 +42,23 @@ export interface CatchUpResult {
 /**
  * Brings a farm up to date after an absence.
  *
- * Time is only simulated up to OFFLINE_CAP_MINUTES; anything beyond that is
- * discarded rather than simulated, so a farm left alone overnight is greeted
- * with a good morning rather than a week of dead customers.
+ * Only the remaining away budget is simulated; anything beyond it is discarded
+ * rather than simulated, so a farm left alone overnight is greeted with a good
+ * morning rather than a week of dead customers. The budget is shared with the
+ * alarm loop via `state.awayMinutes`, so live ticking and catch-up cannot both
+ * spend it.
  */
 export function catchUp(state: FarmState, nowMs: number): CatchUpResult {
   const elapsedMs = Math.max(0, nowMs - state.lastRealMs);
   const elapsedMinutes = Math.floor(elapsedMs / REAL_MS_PER_TICK);
-  state.lastRealMs = nowMs;
 
   if (elapsedMinutes <= 0) {
     return { simulated: 0, skipped: 0, summary: null };
   }
+  state.lastRealMs = nowMs;
 
-  const simulated = Math.min(elapsedMinutes, OFFLINE_CAP_MINUTES);
+  const budget = Math.max(0, OFFLINE_CAP_MINUTES - state.awayMinutes);
+  const simulated = Math.min(elapsedMinutes, budget);
   const skipped = elapsedMinutes - simulated;
 
   const before = snapshotForSummary(state);
@@ -63,7 +66,8 @@ export function catchUp(state: FarmState, nowMs: number): CatchUpResult {
 
   advance(state, simulated);
 
-  state.paused = skipped > 0;
+  state.awayMinutes += simulated;
+  state.paused = state.awayMinutes >= OFFLINE_CAP_MINUTES;
 
   // Short gaps are just normal play; don't narrate them.
   if (simulated < 5) {
@@ -80,6 +84,21 @@ export function catchUp(state: FarmState, nowMs: number): CatchUpResult {
     );
   }
   return { simulated, skipped, summary };
+}
+
+/**
+ * Records that the player just did something: the away budget resets and the
+ * world un-pauses. Called once per tool invocation, after catch-up.
+ */
+export function markPlayerContact(state: FarmState, nowMs: number): void {
+  state.awayMinutes = 0;
+  state.paused = false;
+  state.lastRealMs = nowMs;
+}
+
+/** Game-minutes of live ticking still allowed before the world pauses. */
+export function remainingAwayBudget(state: FarmState): number {
+  return Math.max(0, OFFLINE_CAP_MINUTES - state.awayMinutes);
 }
 
 interface SummarySnapshot {

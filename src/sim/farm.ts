@@ -25,6 +25,7 @@ export function createFarm(seed: number, nowMs: number): FarmState {
 
     clock: 0,
     lastRealMs: nowMs,
+    awayMinutes: 0,
     paused: false,
 
     gold: STARTING.gold,

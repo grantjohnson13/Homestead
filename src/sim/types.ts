@@ -176,7 +176,14 @@ export interface FarmState {
   clock: number;
   /** Wall-clock ms at the last tick, used to catch up after an absence. */
   lastRealMs: number;
-  /** True once the world has been idle past the offline cap. */
+  /**
+   * Game-minutes simulated since the player last did anything. The alarm loop
+   * and offline catch-up draw on the same OFFLINE_CAP_MINUTES budget, so an
+   * absence costs two game-hours whether the world was ticking live or was
+   * fast-forwarded on return — never both.
+   */
+  awayMinutes: number;
+  /** True once the away budget is spent and the world has stopped. */
   paused: boolean;
 
   gold: number;

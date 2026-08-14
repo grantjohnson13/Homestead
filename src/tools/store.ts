@@ -5,7 +5,14 @@
  * storage. Nothing in `tools/` knows which it is talking to.
  */
 
-import { catchUp, createFarm, makeSeed, type CatchUpResult, type FarmState } from "../sim/index.ts";
+import {
+  catchUp,
+  createFarm,
+  makeSeed,
+  markPlayerContact,
+  type CatchUpResult,
+  type FarmState,
+} from "../sim/index.ts";
 
 export interface FarmStore {
   /** Current wall-clock time in ms. Injected so tests can control it. */
@@ -37,6 +44,8 @@ export async function withFarm<T>(
   // silently swallowed the passage of time.
   const eventCursor = state.eventsLogged;
   const caughtUp = catchUp(state, now);
+  // The player is here, so the away budget resets and the world resumes.
+  markPlayerContact(state, now);
 
   const result = await mutate(state);
   await store.write(state);
