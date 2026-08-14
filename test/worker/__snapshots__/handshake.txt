@@ -16,7 +16,7 @@
       "name": "homestead",
       "version": "0.1.0"
     },
-    "instructions": "Homestead is a cozy farming game the player plays by talking to you.\n\nYour role: you are the narrator and the player's hands. The player owns the farm;\nthey never click anything. They tell you what they want (\"water the tomatoes, then\nfeed the chickens\") and you translate that into tool calls.\n\nWren is the farmhand who lives on the farm. The player does not control Wren\ndirectly — they assign tasks, and Wren walks around executing her queue in real\ntime. Time keeps passing between messages: crops grow, animals produce, and\ncustomers arrive whether or not anyone is looking.\n\nHow to play well:\n- Call get_farm_state when you need to see the farm, or when the player asks what's\n  happening. It returns a live view of the farm alongside the data.\n- Call get_almanac once for crop economics and rules rather than guessing numbers.\n- Batch work with assign_tasks: one call with an ordered list beats six calls.\n  It validates everything up front and tells you exactly why anything was rejected.\n- Every mutating tool returns an \"events\" array describing what happened since your\n  last call. Narrate those — that's the passage of time the player can't see.\n- Goods are sold from the farm stand, not from barn storage. Harvests land in the\n  barn, so remember to queue a restock task before customers show up.\n- Wren has stamina and will refuse work when exhausted. Let her rest; don't fight it.\n\nTone: cozy, warm, a little whimsical. Wren occasionally has a line of her own in the\ntool result — use it, don't paraphrase it away. Keep the player's attention on the\nfarm and the season's small victories, not on the mechanics."
+    "instructions": "Homestead is a cozy farming game the player plays by talking to you.\n\nYour role: you are the narrator and the player's hands. The player owns the farm;\nthey never click anything. They tell you what they want (\"water the tomatoes, then\nfeed the chickens\") and you translate that into tool calls.\n\nWren is the farmhand who lives on the farm. The player does not control Wren\ndirectly — they assign tasks, and Wren walks around executing her queue in real\ntime. Time keeps passing between messages: crops grow, animals produce, and\ncustomers arrive whether or not anyone is looking.\n\nHow to play well:\n- Call get_farm_state when you need to see the farm, or when the player asks what's\n  happening. It returns a live view of the farm alongside the data.\n- Call get_almanac once for crop economics and rules rather than guessing numbers.\n- Batch work with assign_tasks: one call with an ordered list beats six calls.\n  It validates everything up front and tells you exactly why anything was rejected.\n- Every mutating tool returns an \"events\" array describing what happened since your\n  last call. Narrate those — that's the passage of time the player can't see.\n- Goods are sold from the farm stand, not from barn storage. Harvests land in the\n  barn, so remember to queue a restock task before customers show up.\n- You do NOT sell to customers one at a time. Set a price list with set_prices and\n  the stand serves itself: anyone whose basket is in stock and within what they'll\n  pay buys on their own, including between your messages. If people keep walking,\n  read the lost-sales log — it says what they would have paid — and re-price.\n- Wren has stamina and will refuse work when exhausted. Let her rest; don't fight it.\n\nTone: cozy, warm, a little whimsical. Wren occasionally has a line of her own in the\ntool result — use it, don't paraphrase it away. Keep the player's attention on the\nfarm and the season's small victories, not on the mechanics."
   },
   "jsonrpc": "2.0",
   "id": 1
@@ -236,9 +236,40 @@
         }
       },
       {
+        "name": "set_prices",
+        "title": "Set your asking prices",
+        "description": "Sets what the farm stand charges per unit. This is the main economic lever in the game.\n\nCustomers arrive with a private ceiling for their basket and buy **on their own** the moment your price is at or under it and the stand has the goods — nobody needs to be standing at the counter, so a good price list keeps earning between conversations.\n\nPrice high for fat margins and watch people walk; price low to move volume. Someone who leaves over price is recorded in the lost-sales log along with what they *would* have paid, so the way to find the ceiling is to bump into it and read the log. Higher reputation raises what the whole valley will pay.\n\nGoods: radish, lettuce, tomato, corn, strawberry, pumpkin, egg, milk. Set only the ones you want to change; the rest keep their current price. Prices are clamped to a sane band around the market reference.\n\nExample: {\"prices\": {\"radish\": 32, \"egg\": 26}}",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "prices": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              },
+              "description": "Good id to price in gold, e.g. {\"tomato\": 55, \"egg\": 24}. Sellable goods: radish, lettuce, tomato, corn, strawberry, pumpkin, egg, milk."
+            }
+          },
+          "required": [
+            "prices"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "_meta": {
+          "ui": {
+            "resourceUri": "ui://homestead/farm-view"
+          },
+          "ui/resourceUri": "ui://homestead/farm-view"
+        }
+      },
+      {
         "name": "list_waiting_customers",
         "title": "See who is at the stand",
-        "description": "Lists the customers currently waiting at the farm stand: name, what they want, what they're offering, how many game-minutes of patience they have left, and — importantly — whether the stand can actually fill their order right now. If it can't, the response names what is short so you can queue a restock task before they give up and walk (which costs reputation).",
+        "description": "Lists who is browsing the farm stand: name, what they want, what their basket costs at YOUR current prices, how long they'll wait, whether the stand can fill the order, and whether your price is within what they'll pay.\n\nAnyone who is both in stock and affordable buys on their own — you do not need to do anything. This tool is for spotting the ones who won't: restock what is short, or use set_prices if people keep walking over price. It also returns the recent lost-sales log, which reveals what those customers would have paid.",
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
@@ -261,7 +292,7 @@
       {
         "name": "sell_to_customer",
         "title": "Sell to a waiting customer",
-        "description": "Completes a sale. Pass `accept: true` to take the customer's offer, which always works if the stand has the goods. Or pass `counterPrice` to haggle: each customer has a private ceiling, and a counter within it earns more gold. Push too far and they usually refuse — and sometimes walk out, costing reputation.\n\nGoods come off the FARM STAND, not barn storage. If the stand is short, this returns what is missing so you can queue a restock task; the customer keeps waiting meanwhile.\n\nAccepting the asking price is the safe play and still builds reputation. Haggle when the player asks you to, or when a basket looks clearly underpriced.",
+        "description": "Closes a sale by hand. **You usually do not need this** — the stand sells itself whenever your price list is at or under what a customer will pay and the goods are out front. Use set_prices for that.\n\nThis is for one-off deals: pass `price` to undercut your own list price for a single customer, to clear stock or to rescue someone who is about to walk. Omitting `price` sells at your current list price.\n\nGoods come off the FARM STAND, not barn storage. If the stand is short, this returns what is missing so you can queue a restock task; the customer keeps browsing meanwhile.",
         "inputSchema": {
           "type": "object",
           "properties": {
@@ -269,14 +300,10 @@
               "type": "string",
               "description": "Customer id from list_waiting_customers, or simply their name (\"Marta\")."
             },
-            "accept": {
-              "type": "boolean",
-              "description": "True to accept their offer as-is. Ignored if counterPrice is given."
-            },
-            "counterPrice": {
+            "price": {
               "type": "number",
               "exclusiveMinimum": 0,
-              "description": "Ask this price instead of their offer. Risky above their hidden ceiling."
+              "description": "A one-off price for this customer's whole basket. Defaults to your list price."
             }
           },
           "required": [

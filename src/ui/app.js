@@ -922,6 +922,8 @@
     }
 
     renderStock();
+    renderPrices();
+    renderLostSales();
 
     var list = document.getElementById("customers");
     list.textContent = "";
@@ -998,6 +1000,70 @@
     });
   }
 
+  /**
+   * The price list, marked against the market reference so it is obvious at a
+   * glance where you are charging over or under the going rate.
+   */
+  function renderPrices() {
+    var host = document.getElementById("prices");
+    if (!host) return;
+    host.textContent = "";
+
+    var prices = farm.prices || [];
+    if (prices.length === 0) {
+      host.appendChild(el("span", "empty", "No prices set"));
+      return;
+    }
+
+    prices.forEach(function (entry) {
+      var name = (EMBED.goods && EMBED.goods[entry.good] && EMBED.goods[entry.good].name) || entry.good;
+      var over = entry.yourPrice > entry.referencePrice;
+      var under = entry.yourPrice < entry.referencePrice;
+      var chip = el(
+        "span",
+        "chip" + (over ? " over" : under ? " under" : ""),
+        name + " " + entry.yourPrice + "g",
+      );
+      chip.title =
+        "Market reference " +
+        entry.referencePrice +
+        "g" +
+        (over ? " — you are charging a premium" : under ? " — you are undercutting" : "");
+      host.appendChild(chip);
+    });
+  }
+
+  /**
+   * Who left without buying, and why. A price walkout also reports what they
+   * would have paid, which is how the market becomes learnable.
+   */
+  function renderLostSales() {
+    var host = document.getElementById("lost-sales");
+    if (!host) return;
+    host.textContent = "";
+
+    var lost = (farm.lostSales || []).slice(-4).reverse();
+    if (lost.length === 0) {
+      host.appendChild(el("div", "empty", "Nobody has left empty-handed"));
+      return;
+    }
+
+    lost.forEach(function (entry) {
+      var row = el("div", "lost");
+      row.appendChild(el("span", "who", entry.customer));
+      if (entry.reason === "price") {
+        row.appendChild(
+          el("span", "why", " wanted " + entry.wanted + " — you asked " + entry.yourPrice + "g"),
+        );
+        row.appendChild(el("span", "hint", "they'd have paid " + entry.theirMax + "g"));
+      } else {
+        row.appendChild(el("span", "why", " wanted " + entry.wanted));
+        row.appendChild(el("span", "hint", "stand was short " + entry.missing.join(", ")));
+      }
+      host.appendChild(row);
+    });
+  }
+
   function customerCard(customer) {
     var wrap = document.createElement("div");
     wrap.className = "cust";
@@ -1022,18 +1088,19 @@
           })
           .join(", ") +
           " — " +
-          customer.offer +
+          customer.yourPrice +
           "g",
       ),
     );
 
     var meta = el("div", "meta", customer.patienceLeft + "m left · ");
-    var status = el(
-      "span",
-      customer.canFulfill ? "ok" : "short",
-      customer.canFulfill ? "can serve" : "short " + customer.missing.join(", "),
-    );
-    meta.appendChild(status);
+    var blocked = !customer.canFulfill || !customer.affordable;
+    var label = !customer.canFulfill
+      ? "short " + customer.missing.join(", ")
+      : !customer.affordable
+        ? "your price is too high"
+        : "buying now";
+    meta.appendChild(el("span", blocked ? "short" : "ok", label));
     text.appendChild(meta);
     wrap.appendChild(text);
     return wrap;

@@ -9,6 +9,7 @@ import {
   nextId,
   randInt,
   sellToCustomer,
+  setPrices,
   validateBatch,
   type FarmState,
   type TaskInput,
@@ -81,11 +82,15 @@ function chaosRun(seed: number, ticks: number): FarmState {
         gen.int(1, 5),
       );
     }
+    // Randomly re-price the whole stand, and occasionally force a hand-sale.
+    if (gen.next() < 0.04) {
+      const good = gen.pick(["radish", "tomato", "egg", "milk", "pumpkin", "not_a_good"]);
+      setPrices(farm, { [good]: gen.int(1, 400) });
+    }
     if (gen.next() < 0.1 && farm.customers.length > 0) {
       const customer = gen.pick(farm.customers);
-      const counter =
-        gen.next() < 0.5 ? undefined : Math.round(customer.offer * (0.5 + gen.next()));
-      sellToCustomer(farm, customer.id, counter);
+      const price = gen.next() < 0.5 ? undefined : gen.int(1, 500);
+      sellToCustomer(farm, customer.id, price);
     }
     advance(farm, 1);
   }
@@ -186,8 +191,7 @@ describe("invariants under random play", () => {
       expect(farm.customers.length).toBeLessThanOrEqual(4);
       for (const customer of farm.customers) {
         expect(customer.wants.length).toBeGreaterThan(0);
-        expect(customer.offer).toBeGreaterThan(0);
-        expect(customer.tolerance).toBeGreaterThanOrEqual(customer.offer);
+        expect(customer.maxPrice).toBeGreaterThan(0);
         for (const want of customer.wants) expect(want.qty).toBeGreaterThan(0);
       }
     }

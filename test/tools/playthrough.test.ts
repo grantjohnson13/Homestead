@@ -34,6 +34,7 @@ describe("a full playthrough via tool calls only", () => {
         "rename",
         "reorder_task_queue",
         "sell_to_customer",
+        "set_prices",
       ].sort(),
     );
   });
@@ -126,30 +127,32 @@ describe("a full playthrough via tool calls only", () => {
     expect(onStand).toBeGreaterThan(0);
   });
 
-  it("brings a customer to the stand and sells to them", async () => {
-    let customerId: string | null = null;
+  it("sells to customers on its own, without a per-sale tool call", async () => {
+    const before = (await game.call("get_farm_state")).state;
 
-    // Customers arrive on a timer; give them a while to show up.
-    for (let i = 0; i < 40 && !customerId; i++) {
-      game.passTime(10);
-      const waiting = await game.call("list_waiting_customers");
-      const customers = waiting.state.customers;
-      const fillable = customers.find((c) => c.canFulfill);
-      if (fillable) customerId = fillable.id;
+    // No sell_to_customer here at all: the stand serves anyone it can fill at
+    // the current price list, which is what keeps it earning between turns.
+    let sold = false;
+    for (let i = 0; i < 40 && !sold; i++) {
+      game.passTime(20);
+      const look = record("wait", await game.call("get_farm_state"));
+      sold = look.events.some((event) => event.startsWith("Sold "));
     }
 
-    expect(customerId, "a fillable customer should have arrived").not.toBeNull();
+    expect(sold, "the stand should have served someone unattended").toBe(true);
 
-    const before = (await game.call("get_farm_state")).state;
-    const sale = record(
-      "sell",
-      await game.call("sell_to_customer", { customerId: customerId as string, accept: true }),
-    );
+    const after = (await game.call("get_farm_state")).state;
+    expect(after.gold).toBeGreaterThan(before.gold);
+    expect(after.reputation).toBeGreaterThanOrEqual(before.reputation);
+  });
 
-    expect(sale.isError).toBe(false);
-    expect(sale.data["outcome"]).toBe("sold");
-    expect(sale.state.gold).toBeGreaterThan(before.gold);
-    expect(sale.state.reputation).toBeGreaterThanOrEqual(before.reputation);
+  it("reports prices and lets them be changed", async () => {
+    const response = record("prices", await game.call("set_prices", { prices: { radish: 32 } }));
+
+    expect(response.isError).toBe(false);
+    const radish = response.state.prices.find((p) => p.good === "radish");
+    expect(radish?.yourPrice).toBe(32);
+    expect(response.data["changes"]).toHaveLength(1);
   });
 
   it("has produced a coherent narrative log", () => {
@@ -209,11 +212,36 @@ describe("tool-level error handling", () => {
     expect(response.text).toContain("No customer called");
   });
 
-  it("insists on knowing how to close a sale", async () => {
+  it("rejects a nonsense price change and says what is sellable", async () => {
     const game = await newGame();
-    const response = await game.call("sell_to_customer", { customerId: "anyone" });
+    const response = await game.call("set_prices", { prices: { tractor: 40 } });
     expect(response.isError).toBe(true);
-    expect(response.text).toContain("accept: true");
+    expect(response.text).toContain("not something the stand sells");
+  });
+
+  it("refuses a hand-sale above what the customer will pay", async () => {
+    const game = await newGame();
+    await game.call("get_farm_state");
+    await game.poke((state) => {
+      state.stand["egg"] = 4;
+      state.customers.push({
+        id: "customer_1",
+        name: "Toft",
+        portrait: 8,
+        wants: [{ good: "egg", qty: 2 }],
+        maxPrice: 30,
+        arrivedAt: state.clock,
+        patience: 150,
+        spot: { x: 7, y: 10 },
+      });
+    });
+
+    const response = await game.call("sell_to_customer", {
+      customerId: "customer_1",
+      price: 400,
+    });
+    expect(response.isError).toBe(true);
+    expect(response.text).toContain("won't pay");
   });
 
   it("says what the stand is short when an order cannot be filled", async () => {
@@ -225,8 +253,7 @@ describe("tool-level error handling", () => {
         name: "Marta",
         portrait: 0,
         wants: [{ good: "pumpkin", qty: 2 }],
-        offer: 400,
-        tolerance: 500,
+        maxPrice: 400,
         arrivedAt: state.clock,
         patience: 10,
         spot: { x: 7, y: 10 },

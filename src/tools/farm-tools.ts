@@ -22,7 +22,9 @@ import {
   makeSeed,
   nextId,
   patienceRemaining,
+  pricingInsights,
   sellToCustomer,
+  setPrices,
   validateBatch,
   wrenLine,
   type FarmState,
@@ -52,6 +54,7 @@ export function registerFarmTools(server: McpServer, store: FarmStore): void {
   registerClearQueue(server, store);
   registerReorderQueue(server, store);
   registerBuySupplies(server, store);
+  registerSetPrices(server, store);
   registerListCustomers(server, store);
   registerSellToCustomer(server, store);
   registerRename(server, store);
@@ -311,6 +314,64 @@ function registerBuySupplies(server: McpServer, store: FarmStore): void {
   );
 }
 
+function registerSetPrices(server: McpServer, store: FarmStore): void {
+  registerFarmViewTool(
+    server,
+    "set_prices",
+    {
+      title: "Set your asking prices",
+      description:
+        "Sets what the farm stand charges per unit. This is the main economic lever in the " +
+        "game.\n\n" +
+        "Customers arrive with a private ceiling for their basket and buy **on their own** the " +
+        "moment your price is at or under it and the stand has the goods — nobody needs to be " +
+        "standing at the counter, so a good price list keeps earning between conversations.\n\n" +
+        "Price high for fat margins and watch people walk; price low to move volume. Someone " +
+        "who leaves over price is recorded in the lost-sales log along with what they *would* " +
+        "have paid, so the way to find the ceiling is to bump into it and read the log. Higher " +
+        "reputation raises what the whole valley will pay.\n\n" +
+        `Goods: ${GOOD_IDS.join(", ")}. Set only the ones you want to change; the rest keep ` +
+        "their current price. Prices are clamped to a sane band around the market reference.\n\n" +
+        'Example: {"prices": {"radish": 32, "egg": 26}}',
+      inputSchema: {
+        // Deliberately a loose record: an unknown good is answered by the
+        // handler with a message naming what *is* sellable, which is far more
+        // use to a caller than a bare schema rejection.
+        prices: z
+          .record(z.string(), z.number())
+          .describe(
+            `Good id to price in gold, e.g. {"tomato": 55, "egg": 24}. Sellable goods: ${GOOD_IDS.join(", ")}.`,
+          ),
+      },
+    },
+    async ({ prices }) => {
+      const { state, result, eventCursor } = await withFarm(store, (farm) =>
+        setPrices(farm, prices as Record<string, number>),
+      );
+
+      if (!result.ok) return refusal(result.reason, { state: snapshot(state) });
+
+      if (result.changes.length === 0) {
+        return buildResult(state, {
+          summary: "Those prices were already set — nothing changed.",
+          eventCursor,
+          awaySummary: takeAwaySummary(state),
+          extra: { changes: [] },
+        });
+      }
+
+      const described = result.changes.map((c) => `${c.good} ${c.from}g → ${c.to}g`).join(", ");
+
+      return buildResult(state, {
+        summary: `Updated the price list: ${described}.`,
+        eventCursor,
+        awaySummary: takeAwaySummary(state),
+        extra: { changes: result.changes, insights: pricingInsights(state) },
+      });
+    },
+  );
+}
+
 function registerListCustomers(server: McpServer, store: FarmStore): void {
   registerFarmViewTool(
     server,
@@ -318,11 +379,13 @@ function registerListCustomers(server: McpServer, store: FarmStore): void {
     {
       title: "See who is at the stand",
       description:
-        "Lists the customers currently waiting at the farm stand: name, what they want, what " +
-        "they're offering, how many game-minutes of patience they have left, and — importantly — " +
-        "whether the stand can actually fill their order right now. If it can't, the response " +
-        "names what is short so you can queue a restock task before they give up and walk " +
-        "(which costs reputation).",
+        "Lists who is browsing the farm stand: name, what they want, what their basket costs at " +
+        "YOUR current prices, how long they'll wait, whether the stand can fill the order, and " +
+        "whether your price is within what they'll pay.\n\n" +
+        "Anyone who is both in stock and affordable buys on their own — you do not need to do " +
+        "anything. This tool is for spotting the ones who won't: restock what is short, or use " +
+        "set_prices if people keep walking over price. It also returns the recent lost-sales " +
+        "log, which reveals what those customers would have paid.",
       inputSchema: {},
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -330,16 +393,24 @@ function registerListCustomers(server: McpServer, store: FarmStore): void {
       const { state, eventCursor } = await withFarm(store, () => undefined);
       const snap = snapshot(state);
 
+      const stuck = snap.customers.filter((c) => !c.canFulfill || !c.affordable);
       const summary =
         snap.customers.length === 0
           ? "Nobody is at the stand right now."
-          : `${snap.customers.length} customer(s) waiting at the stand.`;
+          : `${snap.customers.length} browsing the stand` +
+            (stuck.length > 0
+              ? `; ${stuck.length} cannot be served yet (see why below).`
+              : " — all of them can be served, so they'll buy on their own.");
 
       return buildResult(state, {
         summary,
         eventCursor,
         awaySummary: takeAwaySummary(state),
-        extra: { customers: snap.customers },
+        extra: {
+          customers: snap.customers,
+          lostSales: snap.lostSales,
+          insights: pricingInsights(state),
+        },
       });
     },
   );
@@ -352,38 +423,30 @@ function registerSellToCustomer(server: McpServer, store: FarmStore): void {
     {
       title: "Sell to a waiting customer",
       description:
-        "Completes a sale. Pass `accept: true` to take the customer's offer, which always works " +
-        "if the stand has the goods. Or pass `counterPrice` to haggle: each customer has a " +
-        "private ceiling, and a counter within it earns more gold. Push too far and they " +
-        "usually refuse — and sometimes walk out, costing reputation.\n\n" +
+        "Closes a sale by hand. **You usually do not need this** — the stand sells itself " +
+        "whenever your price list is at or under what a customer will pay and the goods are " +
+        "out front. Use set_prices for that.\n\n" +
+        "This is for one-off deals: pass `price` to undercut your own list price for a single " +
+        "customer, to clear stock or to rescue someone who is about to walk. Omitting `price` " +
+        "sells at your current list price.\n\n" +
         "Goods come off the FARM STAND, not barn storage. If the stand is short, this returns " +
-        "what is missing so you can queue a restock task; the customer keeps waiting meanwhile.\n\n" +
-        "Accepting the asking price is the safe play and still builds reputation. Haggle when " +
-        "the player asks you to, or when a basket looks clearly underpriced.",
+        "what is missing so you can queue a restock task; the customer keeps browsing meanwhile.",
       inputSchema: {
         customerId: z
           .string()
           .describe('Customer id from list_waiting_customers, or simply their name ("Marta").'),
-        accept: z
-          .boolean()
-          .optional()
-          .describe("True to accept their offer as-is. Ignored if counterPrice is given."),
-        counterPrice: z
+        price: z
           .number()
           .positive()
           .optional()
-          .describe("Ask this price instead of their offer. Risky above their hidden ceiling."),
+          .describe(
+            "A one-off price for this customer's whole basket. Defaults to your list price.",
+          ),
       },
     },
-    async ({ customerId, accept, counterPrice }) => {
-      if (counterPrice === undefined && accept !== true) {
-        return refusal(
-          "Say how to close the sale: either accept: true to take their offer, or counterPrice to haggle.",
-        );
-      }
-
+    async ({ customerId, price }) => {
       const { state, result, eventCursor } = await withFarm(store, (farm) =>
-        sellToCustomer(farm, customerId, counterPrice),
+        sellToCustomer(farm, customerId, price),
       );
 
       switch (result.kind) {
@@ -402,26 +465,13 @@ function registerSellToCustomer(server: McpServer, store: FarmStore): void {
             { missing: result.missing, state: snapshot(state) },
           );
 
-        case "declined":
-          return buildResult(state, {
-            summary: result.message,
-            eventCursor,
-            awaySummary: takeAwaySummary(state),
-            extra: { outcome: "declined", customerId: result.customer.id },
-          });
-
-        case "walked_out":
-          return buildResult(state, {
-            summary: `${result.customer.name} refused and walked off (${result.reputationDelta} reputation).`,
-            eventCursor,
-            wrenLine: wrenLine(state, "customerLeft"),
-            awaySummary: takeAwaySummary(state),
-            extra: {
-              outcome: "walked_out",
-              customerId: result.customer.id,
-              reputationDelta: result.reputationDelta,
-            },
-          });
+        case "too_expensive":
+          return refusal(
+            `${result.customer.name} won't pay ${result.yourPrice}g for that. They're still ` +
+              "browsing — either lower your prices with set_prices, or pass a smaller `price` " +
+              "for this one customer.",
+            { outcome: "too_expensive", customerId: result.customer.id, state: snapshot(state) },
+          );
 
         case "sold":
           return buildResult(state, {

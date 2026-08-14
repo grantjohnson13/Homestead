@@ -446,6 +446,42 @@ body {
   font-weight: 650;
 }
 
+/* Priced above / below the market reference. */
+.chip.over {
+  background: rgba(184, 128, 47, 0.18);
+  color: var(--warn);
+}
+
+.chip.under {
+  background: rgba(76, 139, 82, 0.16);
+  color: var(--good);
+}
+
+.lost {
+  font-size: 12px;
+  padding: 4px 0;
+  border-top: 1px solid var(--line);
+  line-height: 1.35;
+}
+
+.lost:first-child {
+  border-top: 0;
+}
+
+.lost .who {
+  font-weight: 650;
+}
+
+.lost .why {
+  color: var(--ink-soft);
+}
+
+.lost .hint {
+  display: block;
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+
 /* Count of goods sitting on the stand, drawn over the counter. */
 .stand-count {
   font: 700 9px var(--font);

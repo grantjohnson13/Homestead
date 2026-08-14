@@ -132,14 +132,32 @@ export interface Customer {
   /** Index into the UI's portrait set. */
   portrait: number;
   wants: CustomerWant[];
-  /** What they volunteer to pay for the whole basket. */
-  offer: number;
-  /** The most they would ever pay; never revealed to the player. */
-  tolerance: number;
+  /**
+   * The most this customer would pay for their whole basket. Never revealed
+   * while they are at the stand — learning the market by losing the occasional
+   * sale is the point — but disclosed afterwards in the lost-sale log.
+   */
+  maxPrice: number;
   arrivedAt: number;
   /** Game-minutes they will wait in total. */
   patience: number;
   spot: Point;
+}
+
+/** Why a customer left without buying. */
+export type LostSaleReason = "price" | "stock";
+
+export interface LostSale {
+  at: number;
+  customer: string;
+  reason: LostSaleReason;
+  wants: CustomerWant[];
+  /** What your price list came to for their basket. */
+  yourPrice: number;
+  /** What they would have paid. Only meaningful when reason is "price". */
+  theirMax: number;
+  /** Goods the stand was short of, when reason is "stock". */
+  missing: string[];
 }
 
 export type EventKind = "crop" | "animal" | "customer" | "wren" | "economy" | "system";
@@ -178,6 +196,14 @@ export interface FarmState {
   inventory: Record<string, number>;
   /** Goods carried out to the farm stand, where customers can buy them. */
   stand: Record<string, number>;
+  /**
+   * What you charge per unit, by good id. Customers buy on their own when your
+   * price is at or under what they were willing to pay, so this is the main
+   * economic lever — set it once and it applies to everyone.
+   */
+  prices: Record<string, number>;
+  /** Recent customers who left without buying, and why. Trimmed like events. */
+  lostSales: LostSale[];
 
   plots: Plot[];
   animals: Animal[];

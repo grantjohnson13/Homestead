@@ -8,12 +8,15 @@
 
 import { ANIMALS } from "../data/animals.ts";
 import { CROPS } from "../data/crops.ts";
-import { GOODS, describeGood, type GoodId } from "../data/items.ts";
+import { GOODS, GOOD_IDS, describeGood, type GoodId } from "../data/items.ts";
 import { MAP_ART, MAP_HEIGHT, MAP_WIDTH } from "../data/map.ts";
 import {
+  affordable,
+  basketPrice,
   farmTime,
   fulfillment,
   isHarvestable,
+  priceOf,
   minutesToProduce,
   isFed,
   moodLabel,
@@ -60,12 +63,29 @@ export interface CustomerSnapshot {
   name: string;
   portrait: number;
   wants: { good: string; qty: number; label: string }[];
-  offer: number;
+  /** What their basket costs at your current prices. */
+  yourPrice: number;
   patienceLeft: number;
   patienceTotal: number;
   x: number;
   y: number;
   canFulfill: boolean;
+  missing: string[];
+  /**
+   * Whether your price is within what they will pay. Their actual ceiling stays
+   * hidden until they walk — finding it is the game.
+   */
+  affordable: boolean;
+}
+
+export interface LostSaleSnapshot {
+  at: number;
+  customer: string;
+  reason: "price" | "stock";
+  wanted: string;
+  yourPrice: number;
+  /** Only meaningful for a price walkout. */
+  theirMax: number;
   missing: string[];
 }
 
@@ -97,6 +117,10 @@ export interface FarmSnapshot {
   customers: CustomerSnapshot[];
   inventory: Record<string, number>;
   stand: Record<string, number>;
+  /** Your asking price per unit, and the market reference for comparison. */
+  prices: { good: string; yourPrice: number; referencePrice: number }[];
+  /** Recent customers who left without buying, and why. */
+  lostSales: LostSaleSnapshot[];
   recentEvents: { at: number; kind: string; text: string }[];
 }
 
@@ -132,17 +156,32 @@ export function snapshot(state: FarmState): FarmSnapshot {
           qty: w.qty,
           label: describeGood(w.good, w.qty),
         })),
-        offer: customer.offer,
+        yourPrice: basketPrice(state, customer.wants),
         patienceLeft: patienceRemaining(state, customer),
         patienceTotal: customer.patience,
         x: customer.spot.x,
         y: customer.spot.y,
         canFulfill,
         missing: missing.map((m) => describeGood(m.good, m.qty)),
+        affordable: affordable(state, customer),
       };
     }),
     inventory: { ...state.inventory },
     stand: { ...state.stand },
+    prices: GOOD_IDS.map((good) => ({
+      good,
+      yourPrice: priceOf(state, good),
+      referencePrice: GOODS[good].basePrice,
+    })),
+    lostSales: state.lostSales.map((lost) => ({
+      at: lost.at,
+      customer: lost.customer,
+      reason: lost.reason,
+      wanted: lost.wants.map((w) => describeGood(w.good, w.qty)).join(" and "),
+      yourPrice: lost.yourPrice,
+      theirMax: lost.theirMax,
+      missing: [...lost.missing],
+    })),
     recentEvents: state.events.slice(-12).map((e) => ({ at: e.at, kind: e.kind, text: e.text })),
   };
 }
@@ -268,16 +307,40 @@ export function describeFarm(snap: FarmSnapshot): string {
   lines.push(`Barn: ${describeBag(snap.inventory)}`);
   lines.push(`Stand: ${describeBag(snap.stand)}`);
 
+  const marked = snap.prices.filter((p) => p.yourPrice !== p.referencePrice);
+  lines.push(
+    `Your prices: ${snap.prices.map((p) => `${p.good} ${p.yourPrice}g`).join(", ")}` +
+      (marked.length > 0
+        ? ` (${marked.length} set away from the market reference)`
+        : " (all at the market reference)"),
+  );
+
   if (snap.customers.length > 0) {
-    lines.push("Waiting customers:");
+    lines.push("Browsing the stand:");
     for (const c of snap.customers) {
+      const blockers: string[] = [];
+      if (!c.canFulfill) blockers.push(`stand is short ${c.missing.join(", ")}`);
+      if (!c.affordable) blockers.push("your price is above what they'll pay");
       lines.push(
-        `  ${c.name} (${c.id}) wants ${c.wants.map((w) => w.label).join(" and ")} for ${c.offer}g` +
-          ` — ${c.patienceLeft}m patience left — ${c.canFulfill ? "stand can fill this" : `stand is short ${c.missing.join(", ")}`}`,
+        `  ${c.name} (${c.id}) wants ${c.wants.map((w) => w.label).join(" and ")} — ` +
+          `your price ${c.yourPrice}g — ${c.patienceLeft}m left — ` +
+          (blockers.length === 0 ? "buying now" : blockers.join("; ")),
       );
     }
   } else {
-    lines.push("No customers at the stand right now.");
+    lines.push("Nobody at the stand right now.");
+  }
+
+  if (snap.lostSales.length > 0) {
+    const recent = snap.lostSales.slice(-4);
+    lines.push("Recently lost sales:");
+    for (const lost of recent) {
+      lines.push(
+        lost.reason === "price"
+          ? `  ${lost.customer} wanted ${lost.wanted}: you asked ${lost.yourPrice}g, they'd have paid ${lost.theirMax}g`
+          : `  ${lost.customer} wanted ${lost.wanted}: stand was short ${lost.missing.join(", ")}`,
+      );
+    }
   }
 
   return lines.join("\n");

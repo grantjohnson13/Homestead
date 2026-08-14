@@ -3,9 +3,8 @@ import {
   advance,
   buySupplies,
   countItem,
-  fulfillment,
+  eventsSince,
   isHarvestable,
-  sellToCustomer,
   type FarmState,
 } from "../../src/sim/index.ts";
 import { assignOrThrow, makeFarm } from "./helpers.ts";
@@ -42,15 +41,12 @@ function playDemoDay(seed: number, ticks: number): DayResult {
   let goldLow = farm.gold;
 
   for (let tick = 0; tick < ticks; tick++) {
+    const eventsBefore = farm.eventsLogged;
     advance(farm, 1);
     goldLow = Math.min(goldLow, farm.gold);
 
-    // Serve anyone the stand can actually satisfy, at their asking price.
-    for (const customer of [...farm.customers]) {
-      if (fulfillment(farm, customer).canFulfill) {
-        if (sellToCustomer(farm, customer.id).kind === "sold") sales += 1;
-      }
-    }
+    // The stand serves itself at the current price list — no per-sale call.
+    sales += eventsSince(farm, eventsBefore).filter((e) => e.text.startsWith("Sold ")).length;
 
     // Every so often, tidy up: harvest what is ready, re-water what has dried,
     // and carry the barn out to the stand.

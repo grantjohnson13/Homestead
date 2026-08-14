@@ -86,25 +86,45 @@ export const REPUTATION = {
   start: 50,
   min: 0,
   max: 100,
-  /** Gained for a sale at or below the customer's offer. */
+  /** Gained for a sale. */
   perSale: 3,
-  /** Extra penalty applied to a greedy counter that made them walk. */
-  perWalkout: -2,
-  /** Lost when a customer's patience runs out. */
+  /**
+   * Lost when someone leaves because your prices were too high. Milder than an
+   * empty shelf: charging a premium is a strategy, not a failure, but word does
+   * get round that you are dear.
+   */
+  perPriceWalkout: -1,
+  /** Lost when a customer leaves because the stand could not fill their order. */
   perTimeout: -2,
   /** Reputation at which the certificate unlocks. */
   certificateAt: 90,
 } as const;
 
-/** Price tolerance: how far above their offer a customer will still pay. */
+/**
+ * What customers are willing to pay.
+ *
+ * You set a price list; each customer arrives with a private ceiling for their
+ * basket and buys on their own if your price is at or under it. These numbers
+ * decide how much headroom there is above the reference price in `data/items`.
+ */
 export const PRICING = {
-  /** Tolerance multiplier at reputation 0 / 100 respectively. */
-  toleranceAtMinRep: 1.05,
-  toleranceAtMaxRep: 1.35,
-  /** A counter above tolerance still has this chance of being accepted anyway. */
-  stretchAcceptChance: 0.25,
-  /** ...and this chance of making them leave outright. */
-  walkoutChance: 0.5,
+  /**
+   * Willingness-to-pay multiplier at reputation 0 / 100 respectively.
+   *
+   * Customer throughput, not production, is the real constraint: roughly a
+   * dozen customers turn up in a long session, so a farm cannot sell its way
+   * out of trouble on volume. There has to be genuine headroom above the
+   * reference price for the pricing lever to be worth pulling.
+   */
+  willingnessAtMinRep: 0.9,
+  willingnessAtMaxRep: 1.7,
+  /** Random per-customer wobble, so the ceiling is never exactly predictable. */
+  willingnessJitter: 0.12,
+  /** Prices are clamped to this multiple of the reference price. */
+  minPriceMultiple: 0.1,
+  maxPriceMultiple: 10,
+  /** Most lost sales kept in the rolling log. */
+  maxLostSales: 20,
 } as const;
 
 /** Starting conditions for a brand-new farm. */

@@ -3,7 +3,7 @@
  */
 
 import { ANIMALS, STARTING_MOOD, defaultAnimalName, type AnimalKind } from "../data/animals.ts";
-import { FEED_ITEM_ID } from "../data/items.ts";
+import { FEED_ITEM_ID, GOODS, GOOD_IDS } from "../data/items.ts";
 import { PLOT_TILES, WREN_HOME } from "../data/map.ts";
 import { CUSTOMERS, MAX_EVENTS, REPUTATION, STAMINA, STARTING } from "./constants.ts";
 import { poissonInterval } from "./rng.ts";
@@ -32,6 +32,10 @@ export function createFarm(seed: number, nowMs: number): FarmState {
     reputation: REPUTATION.start,
     inventory: { ...STARTING.seeds, [FEED_ITEM_ID]: STARTING.feed },
     stand: {},
+    // Start at the market reference price, so a farm is sellable out of the box
+    // and the player can tune from a sane baseline rather than from zero.
+    prices: Object.fromEntries(GOOD_IDS.map((id) => [id, GOODS[id].basePrice])),
+    lostSales: [],
 
     plots: PLOT_TILES.map((tile) => ({
       id: tile.plotId as string,

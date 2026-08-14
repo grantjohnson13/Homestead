@@ -8,16 +8,16 @@
  * balance problem in the game.
  */
 
+import { GOODS, GOOD_IDS } from "../../src/data/items.ts";
 import {
   advance,
   buySupplies,
   countItem,
   createFarm,
   eventsSince,
-  fulfillment,
   isHarvestable,
   nextId,
-  sellToCustomer,
+  setPrices,
   validateBatch,
   type FarmState,
   type TaskInput,
@@ -58,8 +58,11 @@ function makeContext(farm: FarmState): PlayContext {
 }
 
 export interface PlayOptions {
-  /** Counter above the asking price, as a multiplier. 1 = always accept. */
-  haggle?: number;
+  /**
+   * Asking price as a multiple of the market reference. 1 = price at the
+   * reference; above 1 trades volume for margin.
+   */
+  markup?: number;
 }
 
 export function play(
@@ -73,6 +76,19 @@ export function play(
   const ctx = makeContext(farm);
   const startGold = farm.gold;
 
+  // Pricing is a standing decision, set once at the start of the day.
+  if (options.markup && options.markup !== 1) {
+    setPrices(
+      farm,
+      Object.fromEntries(
+        GOOD_IDS.map((good) => [
+          good,
+          Math.round(GOODS[good].basePrice * (options.markup as number)),
+        ]),
+      ),
+    );
+  }
+
   let sales = 0;
   let harvests = 0;
   let walkouts = 0;
@@ -83,23 +99,14 @@ export function play(
     advance(farm, 1);
     goldLow = Math.min(goldLow, farm.gold);
 
-    // Count harvests from the event log: a per-plot marker would undercount,
-    // since harvestsDone resets when a plant is spent.
-    harvests += eventsSince(farm, eventsBefore).filter((e) => e.text.includes("harvested")).length;
+    // Read outcomes from the event log. The stand sells itself now, so there is
+    // no per-customer call left to count.
+    const fresh = eventsSince(farm, eventsBefore);
+    harvests += fresh.filter((e) => e.text.includes("harvested")).length;
+    sales += fresh.filter((e) => e.text.startsWith("Sold ")).length;
+    walkouts += fresh.filter((e) => e.text.includes("baulked at")).length;
 
     policy(farm, tick, ctx);
-
-    // Sell to anyone the stand can serve.
-    for (const customer of [...farm.customers]) {
-      if (!fulfillment(farm, customer).canFulfill) continue;
-      const counter =
-        options.haggle && options.haggle > 1
-          ? Math.round(customer.offer * options.haggle)
-          : undefined;
-      const outcome = sellToCustomer(farm, customer.id, counter);
-      if (outcome.kind === "sold") sales += 1;
-      if (outcome.kind === "walked_out") walkouts += 1;
-    }
   }
 
   const timeouts = farm.events.filter((e) => e.text.includes("left unserved")).length;
@@ -249,7 +256,9 @@ function pickAffordableCrop(farm: FarmState): string | null {
  */
 export const animalPlayer: Policy = (farm, tick, ctx) => {
   if (tick === 0) {
-    buySupplies(farm, "chicken", 3);
+    // Two to start, not three: with only a dozen customers a session, a third
+    // hen produces eggs nobody is left to buy.
+    buySupplies(farm, "chicken", 2);
     buySupplies(farm, "feed", 20);
     ctx.queue([
       { type: "feed", target: "all_animals" },
@@ -289,7 +298,10 @@ export const animalPlayer: Policy = (farm, tick, ctx) => {
 };
 
 export const PLAYERS: { name: string; policy: Policy; options?: PlayOptions }[] = [
-  { name: "cautious", policy: cautiousPlayer },
-  { name: "aggressive", policy: aggressivePlayer, options: { haggle: 1.15 } },
-  { name: "animal-focused", policy: animalPlayer },
+  // Each archetype also prices differently, since that is now the main lever:
+  // the cautious farm undercuts to keep goods moving, the expander charges a
+  // premium, and the dairy prices its scarce eggs and milk high.
+  { name: "cautious", policy: cautiousPlayer, options: { markup: 1.0 } },
+  { name: "aggressive", policy: aggressivePlayer, options: { markup: 1.2 } },
+  { name: "animal-focused", policy: animalPlayer, options: { markup: 1.15 } },
 ];

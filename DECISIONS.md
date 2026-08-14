@@ -368,6 +368,70 @@ only the presentation moved to a farm day-clock (`Day 2 · 07:15`), computed
 server-side in `sim/clock.ts` so the UI and the text fallback cannot disagree.
 Farms start at 6am.
 
+### Selling became a price list, not a negotiation
+
+The brief's selling flow — `list_waiting_customers` then `sell_to_customer` to
+accept or counter — assumes a player who is watching the counter. Playtesting
+showed that assumption does not survive contact with a conversational client.
+
+The failure was stark. A customer arrived wanting two radishes, two radishes were
+sitting on the stand, and they walked anyway, because the model was mid-sentence
+composing a reply. The event log caught it to the second:
+
+```
+1678  Sold 3 tomatoes and 2 eggs to Della for 138g (+4 rep)
+1679  Rooke waited as long as they could and left unserved (-2 rep)
+1680  Sold 2 radishes to Wilhelmina for 56g (+4 rep)
+```
+
+Raising patience only moves the problem: the world runs continuously while the
+player acts in discrete turns, so _any_ per-customer decision will sometimes
+expire unmade.
+
+So selling is now a **standing decision** instead of a reaction. You set a price
+per good with `set_prices`; each customer arrives with a private ceiling for
+their basket and buys on their own the moment your price is at or under it and
+the stand can fill the order. Nobody needs to be at the counter, and a good price
+list keeps earning between conversations.
+
+What this buys, beyond fixing the bug:
+
+- **Pricing is a real strategy.** Charge a premium and watch people walk; undercut
+  and move volume. Reputation raises the whole valley's ceiling, so it now has a
+  direct economic meaning rather than just changing arrival rate.
+- **The market is learnable.** Every price walkout is recorded with what that
+  customer _would_ have paid, and `pricingInsights` turns the log into a
+  suggested price. You find the ceiling by bumping into it.
+- **Failure modes are distinguishable.** Losing someone to an empty shelf (−2 rep)
+  is a different mistake from losing them to a high price (−1 rep), and the game
+  says which happened.
+
+`sell_to_customer` survives as a manual override for one-off deals below the list
+price. Willingness-to-pay is anchored to the _reference_ price, never to your own
+asking price — otherwise raising prices would raise what people pay and the lever
+would do nothing.
+
+### Customer throughput, not production, is the binding constraint
+
+Making the stand self-serving exposed the real shape of the economy. With
+arrivals spaced for human response time, only about a dozen customers visit in a
+long session, and each buys a handful of items. A farm therefore cannot sell its
+way out of trouble on volume — roughly three dozen units is all the market will
+absorb, however much the barn holds.
+
+Two consequences, both now baked in:
+
+- The animal strategy was quietly unprofitable because a 100g hen laying 20g eggs
+  needs five sales to repay herself, and there simply are not enough buyers.
+  Animal goods are priced against livestock cost rather than against vegetables
+  (egg 20 → 28, milk 45 → 62).
+- There has to be genuine headroom above the reference price or the pricing lever
+  is decorative, so willingness-to-pay widened to 0.9× at reputation 0 and 1.7× at 100.
+
+Post-change balance at 600 game-minutes: cautious +220, aggressive +206,
+animal-focused +63. All profitable, inside a factor of 1.3, each pricing to its
+own strategy.
+
 ### The brief's 30-game-minute horizon is too short to measure
 
 Thirty game-minutes is barely one radish cycle plus walking, and no strategy has

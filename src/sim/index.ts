@@ -56,10 +56,19 @@ export {
   removeCustomer,
   patienceRemaining,
   fulfillment,
+  affordable,
   adjustReputation,
   arrivalIntervalMean,
-  toleranceMultiplier,
+  willingnessMultiplier,
+  priceOf,
+  basketPrice,
+  setPrices,
+  sellableGoods,
+  pricingInsights,
   type SaleOutcome,
+  type PriceChange,
+  type PriceUpdate,
+  type PricingInsight,
 } from "./market.ts";
 export { tickWren, wrenLine, standTotal, CARRY_CAPACITY } from "./wren.ts";
 export {

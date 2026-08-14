@@ -254,7 +254,8 @@ describe("animals and customers", () => {
         name: "Marta",
         portrait: 0,
         wants: [{ good: "egg", qty: 2, label: "2 eggs" }],
-        offer: 40,
+        yourPrice: 40,
+        affordable: true,
         patienceLeft: 5,
         patienceTotal: 10,
         x: 7,
@@ -280,7 +281,8 @@ describe("animals and customers", () => {
         name: "Marta",
         portrait: 1,
         wants: [{ good: "egg", qty: 1, label: "1 egg" }],
-        offer: 20,
+        yourPrice: 20,
+        affordable: true,
         patienceLeft: 9,
         patienceTotal: 10,
         x: 7,
@@ -354,7 +356,8 @@ describe("the side panel and ticker", () => {
         name: "Sunni",
         portrait: 2,
         wants: [{ good: "tomato", qty: 2, label: "2 tomatoes" }],
-        offer: 95,
+        yourPrice: 95,
+        affordable: true,
         patienceLeft: 7,
         patienceTotal: 10,
         x: 7,
@@ -368,7 +371,87 @@ describe("the side panel and ticker", () => {
     const card = h.document.querySelector("#customers .cust");
     expect(card?.textContent).toContain("Sunni");
     expect(card?.textContent).toContain("2 tomatoes");
-    expect(card?.querySelector(".ok")?.textContent).toContain("can serve");
+    expect(card?.querySelector(".ok")?.textContent).toContain("buying now");
+  });
+
+  it("says when a customer is blocked by price rather than by stock", async () => {
+    const state = fixtureState();
+    state.customers = [
+      {
+        id: "cu1",
+        name: "Toft",
+        portrait: 8,
+        wants: [{ good: "egg", qty: 2, label: "2 eggs" }],
+        yourPrice: 400,
+        affordable: false,
+        patienceLeft: 90,
+        patienceTotal: 150,
+        x: 7,
+        y: 10,
+        canFulfill: true,
+        missing: [],
+      },
+    ];
+    const h = await mount(state);
+    expect(h.document.querySelector("#customers .short")?.textContent).toContain(
+      "price is too high",
+    );
+  });
+
+  it("shows the price list against the market reference", async () => {
+    const state = fixtureState();
+    state.prices = [
+      { good: "radish", yourPrice: 40, referencePrice: 25 },
+      { good: "egg", yourPrice: 20, referencePrice: 28 },
+    ];
+    const h = await mount(state);
+
+    const over = h.document.querySelector("#prices .chip.over");
+    const under = h.document.querySelector("#prices .chip.under");
+    expect(over?.textContent).toContain("40g");
+    expect(over?.getAttribute("title")).toContain("premium");
+    expect(under?.textContent).toContain("20g");
+    expect(under?.getAttribute("title")).toContain("undercutting");
+  });
+
+  it("shows lost sales and what they would have paid", async () => {
+    const state = fixtureState();
+    state.lostSales = [
+      {
+        at: 100,
+        customer: "Toft",
+        reason: "price",
+        wanted: "2 eggs",
+        yourPrice: 90,
+        theirMax: 44,
+        missing: [],
+      },
+      {
+        at: 120,
+        customer: "Fen",
+        reason: "stock",
+        wanted: "2 radishes",
+        yourPrice: 50,
+        theirMax: 60,
+        missing: ["2 radishes"],
+      },
+    ];
+    const h = await mount(state);
+
+    const text = h.document.getElementById("lost-sales")?.textContent ?? "";
+    expect(text).toContain("Toft");
+    expect(text).toContain("they'd have paid 44g");
+    expect(text).toContain("Fen");
+    expect(text).toContain("stand was short");
+  });
+
+  it("says so when nobody has left empty-handed", async () => {
+    const state = fixtureState();
+    state.lostSales = [];
+    const h = await mount(state);
+    expect(h.document.querySelector("#lost-sales .empty")?.textContent).toContain(
+      "Nobody has left",
+    );
   });
 
   it("shows what is on the stand and what is in the barn", async () => {
@@ -405,7 +488,8 @@ describe("the side panel and ticker", () => {
         name: "Marta",
         portrait: 0,
         wants: [{ good: "egg", qty: 2, label: "2 eggs" }],
-        offer: 40,
+        yourPrice: 40,
+        affordable: true,
         patienceLeft: 100,
         patienceTotal: 150,
         x: 7,
@@ -431,7 +515,8 @@ describe("the side panel and ticker", () => {
         name: "Fen",
         portrait: 4,
         wants: [{ good: "radish", qty: 2, label: "2 radishes" }],
-        offer: 47,
+        yourPrice: 47,
+        affordable: true,
         patienceLeft: 40,
         patienceTotal: 150,
         x: 8,

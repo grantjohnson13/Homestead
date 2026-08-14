@@ -77,11 +77,13 @@ export const MECHANICS = {
   animals: `Animals produce only while fed. Feeding costs feed from your inventory and lasts ${ANIMALS.chicken.feedLastsMinutes} game-minutes. Unfed animals stop producing and their mood slides: ${MOOD_BANDS.map((b) => b.mood).join(" -> ")}. A grumpy animal sometimes skips a production cycle entirely. Feeding and petting restore mood. Animals never die.`,
   wren: `Wren works one task at a time from a FIFO queue, walking there first. She has ${STAMINA.max} stamina; tasks drain it and she recovers by idling at the farmhouse. Below ${STAMINA.refuseBelow} she refuses new work until she has rested back to ${STAMINA.resumeAt}.`,
   selling:
-    "Customers buy from the FARM STAND, not from barn storage. Harvested goods land in the barn, so queue a 'restock' task to carry them to the stand before a customer arrives. list_waiting_customers tells you whether the stand can currently fill each order.",
-  negotiation:
-    "Each customer has a private price tolerance. Accepting their offer always works. A counter-offer within tolerance earns more gold; too greedy and they may walk, which costs reputation.",
+    "Customers buy from the FARM STAND, not from barn storage. Harvested goods land in the barn, so queue a 'restock' task to carry them out front. Nobody needs to be standing at the counter: the stand sells itself.",
+  pricing:
+    "You set a price per good with set_prices; it applies to everyone and keeps working between conversations. Each customer arrives with a private ceiling for their basket and buys on their own the moment your price is at or under it and the goods are in stock. Price high for margin and watch people walk; price low to move volume.",
+  learningPrices:
+    "Anyone who leaves over price is recorded in the lost-sales log along with what they WOULD have paid. That is how you find the ceiling — bump into it, then read the log and adjust. get_farm_state and list_waiting_customers both return it.",
   reputation:
-    "Reputation runs 0-100 and starts at 50. Successful sales raise it, customers who leave unserved lower it. Higher reputation means customers arrive more often and pay more.",
+    "Reputation runs 0-100 and starts at 50. Sales raise it. Losing someone because the shelf was empty costs more than losing them over a high price — charging a premium is a strategy, having nothing to sell is a failure. Higher reputation means customers arrive more often AND will pay more, so it raises your price ceiling.",
 } as const;
 
 export interface AlmanacPayload {

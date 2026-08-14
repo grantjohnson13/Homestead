@@ -22,10 +22,16 @@ export interface GoodDef {
   basePrice: number;
 }
 
+/**
+ * Animal goods are priced against livestock cost, not against vegetables. A hen
+ * costs 100g, so an egg has to be worth enough that she pays for herself inside
+ * a session — and with only about a dozen customers a session, that means value
+ * per unit rather than volume.
+ */
 const ANIMAL_GOODS: Record<AnimalGoodId, GoodDef> = {
-  egg: { id: "egg", name: "Egg", plural: "eggs", basePrice: 20 },
+  egg: { id: "egg", name: "Egg", plural: "eggs", basePrice: 28 },
   // Mass noun: "3 milk", never "3 milks".
-  milk: { id: "milk", name: "Milk", plural: "milk", basePrice: 45 },
+  milk: { id: "milk", name: "Milk", plural: "milk", basePrice: 62 },
 };
 
 /**
