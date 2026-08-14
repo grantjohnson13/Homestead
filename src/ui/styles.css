@@ -153,6 +153,31 @@ body {
   vertical-align: -3px;
 }
 
+/* Anything carrying a tooltip is hoverable and keyboard reachable. */
+[tabindex="0"] {
+  cursor: help;
+}
+
+.chip[tabindex="0"]:hover,
+.upgrade[tabindex="0"]:hover {
+  outline: 1px solid var(--line);
+}
+
+[tabindex="0"]:focus-visible {
+  outline: 2px solid var(--good);
+  outline-offset: 1px;
+}
+
+/* A sprite standing in for a word needs a slightly larger hit target. */
+.wants .glyph[tabindex="0"] {
+  padding: 1px;
+  border-radius: 4px;
+}
+
+.wants .glyph[tabindex="0"]:hover {
+  background: var(--panel-2);
+}
+
 .glyph.lg {
   width: 20px;
   height: 20px;

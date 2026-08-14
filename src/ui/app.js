@@ -775,21 +775,40 @@
     });
   }
 
+  /**
+   * Gives any element the shared tooltip, on pointer and on keyboard focus.
+   *
+   * Used for the board's hit areas and for the sidebar's icons — a sprite with
+   * no label beside it (a crop in the price list, a good in a customer's
+   * basket) is unreadable until you can hover it and be told what it is.
+   */
+  function attachTip(element, html, focusable) {
+    if (focusable) element.setAttribute("tabindex", "0");
+    element.addEventListener("pointerenter", function (event) {
+      showTip(html, event.clientX, event.clientY);
+    });
+    element.addEventListener("pointermove", function (event) {
+      showTip(html, event.clientX, event.clientY);
+    });
+    element.addEventListener("pointerleave", hideTip);
+    element.addEventListener("focus", function () {
+      var box = element.getBoundingClientRect();
+      showTip(html, box.left + box.width / 2, box.top);
+    });
+    element.addEventListener("blur", hideTip);
+    return element;
+  }
+
   function addHit(layer, x, y, w, h, text) {
-    var rect = svg("rect", { class: "tile-hit", x: x, y: y, width: w, height: h, tabindex: 0 });
-    rect.addEventListener("pointerenter", function (event) {
-      showTip(text, event.clientX, event.clientY);
-    });
-    rect.addEventListener("pointermove", function (event) {
-      showTip(text, event.clientX, event.clientY);
-    });
-    rect.addEventListener("pointerleave", hideTip);
-    rect.addEventListener("focus", function () {
-      var box = rect.getBoundingClientRect();
-      showTip(text, box.left + box.width / 2, box.top);
-    });
-    rect.addEventListener("blur", hideTip);
+    var rect = svg("rect", { class: "tile-hit", x: x, y: y, width: w, height: h });
+    attachTip(rect, text, true);
     layer.appendChild(rect);
+  }
+
+  /** The display name of a good, from the data embedded at build time. */
+  function goodName(id) {
+    var def = EMBED.goods && EMBED.goods[id];
+    return def ? def.name : id;
   }
 
   function plotTip(plot) {
@@ -1036,7 +1055,15 @@
       var chip = el("span", "chip" + (extra ? " " + extra : ""));
       if (GOOD_ICON[id]) chip.appendChild(glyph(GOOD_ICON[id]));
       chip.appendChild(document.createTextNode(describeGood(id, bag[id])));
-      if (extra === "needed") chip.title = "Someone at the stand wants this — queue a restock.";
+
+      var tip =
+        "<b>" + escapeHtml(goodName(id)) + "</b>" + escapeHtml(describeGood(id, bag[id])) + " here";
+      if (extra === "needed") {
+        tip += '<br><span class="muted">Someone at the stand wants this — queue a restock.</span>';
+      } else if (extra === "wanted") {
+        tip += '<br><span class="muted">Someone at the stand is asking for this.</span>';
+      }
+      attachTip(chip, tip, true);
       host.appendChild(chip);
     });
   }
@@ -1103,7 +1130,23 @@
           maxed ? "max" : entry.nextCost + "g",
         ),
       );
-      row.title = entry.blurb;
+      attachTip(
+        row,
+        "<b>" +
+          escapeHtml(entry.name) +
+          "</b>" +
+          escapeHtml(entry.effect) +
+          "<br>" +
+          '<span class="muted">' +
+          escapeHtml(entry.blurb) +
+          "</span><br>" +
+          '<span class="muted">' +
+          (maxed
+            ? "Fully upgraded."
+            : "Level " + (entry.level + 1) + " costs " + entry.nextCost + "g.") +
+          "</span>",
+        true,
+      );
       host.appendChild(row);
     });
   }
@@ -1130,13 +1173,23 @@
       var chip = el("span", "chip" + (over ? " over" : under ? " under" : ""));
       if (GOOD_ICON[entry.good]) chip.appendChild(glyph(GOOD_ICON[entry.good]));
       chip.appendChild(document.createTextNode(entry.yourPrice + "g"));
-      void name;
-      chip.title =
-        name +
-        " — market reference " +
-        entry.referencePrice +
-        "g" +
-        (over ? " — you are charging a premium" : under ? " — you are undercutting" : "");
+
+      // These chips are an icon and a number, so without this you cannot tell
+      // what you are pricing.
+      attachTip(
+        chip,
+        "<b>" +
+          escapeHtml(name) +
+          "</b>Your price " +
+          entry.yourPrice +
+          "g<br>" +
+          '<span class="muted">Market reference ' +
+          entry.referencePrice +
+          "g" +
+          (over ? " — charging a premium" : under ? " — undercutting" : "") +
+          "</span>",
+        true,
+      );
       host.appendChild(chip);
     });
   }
@@ -1190,7 +1243,15 @@
     // Show the basket as glyphs plus counts — quicker to read than a sentence.
     var wants = el("div", "wants");
     customer.wants.forEach(function (want) {
-      if (GOOD_ICON[want.good]) wants.appendChild(glyph(GOOD_ICON[want.good]));
+      if (GOOD_ICON[want.good]) {
+        wants.appendChild(
+          attachTip(
+            glyph(GOOD_ICON[want.good]),
+            "<b>" + escapeHtml(goodName(want.good)) + "</b>" + escapeHtml(want.label),
+            true,
+          ),
+        );
+      }
       wants.appendChild(document.createTextNode(want.qty + " "));
     });
     wants.appendChild(document.createTextNode("· " + customer.yourPrice + "g"));

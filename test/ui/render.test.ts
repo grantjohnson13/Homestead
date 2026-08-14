@@ -20,6 +20,14 @@ async function mount(state?: FarmSnapshot): Promise<MockHost> {
   return created;
 }
 
+/** A pointerenter carrying coordinates, which is what the tooltip listens for. */
+function pointerEnter(host: MockHost): Event {
+  const event = new host.dom.window.Event("pointerenter");
+  Object.defineProperty(event, "clientX", { value: 40 });
+  Object.defineProperty(event, "clientY", { value: 40 });
+  return event;
+}
+
 function hrefsIn(host: MockHost, selector: string): string[] {
   return Array.from(host.document.querySelectorAll(`${selector} use`)).map(
     (node) => node.getAttribute("href") ?? "",
@@ -442,12 +450,16 @@ describe("the side panel and ticker", () => {
     ];
     const h = await mount(state);
 
-    const over = h.document.querySelector("#prices .chip.over");
-    const under = h.document.querySelector("#prices .chip.under");
+    const over = h.document.querySelector("#prices .chip.over") as HTMLElement | null;
+    const under = h.document.querySelector("#prices .chip.under") as HTMLElement | null;
     expect(over?.textContent).toContain("40g");
-    expect(over?.getAttribute("title")).toContain("premium");
     expect(under?.textContent).toContain("20g");
-    expect(under?.getAttribute("title")).toContain("undercutting");
+
+    over?.dispatchEvent(pointerEnter(h));
+    expect(h.document.getElementById("tip")?.innerHTML).toContain("premium");
+
+    under?.dispatchEvent(pointerEnter(h));
+    expect(h.document.getElementById("tip")?.innerHTML).toContain("undercutting");
   });
 
   it("shows lost sales and what they would have paid", async () => {
@@ -568,7 +580,9 @@ describe("the side panel and ticker", () => {
     const needed = h.document.querySelectorAll("#barn-stock .chip.needed");
     expect(needed).toHaveLength(1);
     expect(needed[0]?.textContent).toContain("radishes");
-    expect(needed[0]?.getAttribute("title")).toContain("restock");
+
+    (needed[0] as HTMLElement).dispatchEvent(pointerEnter(h));
+    expect(h.document.getElementById("tip")?.innerHTML).toContain("restock");
   });
 
   it("counts the stand's goods on the board itself", async () => {
@@ -685,5 +699,83 @@ describe("tooltips", () => {
     const h = await mount();
     const first = h.document.querySelector("#hits .tile-hit");
     expect(first?.getAttribute("tabindex")).toBe("0");
+  });
+
+  it("names a good when you hover its icon in the price list", async () => {
+    const state = fixtureState();
+    state.prices = [{ good: "radish", yourPrice: 40, referencePrice: 25 }];
+    const h = await mount(state);
+
+    // A price chip is an icon and a number, so the tooltip is the only place
+    // the good is actually named.
+    const chip = h.document.querySelector("#prices .chip") as HTMLElement | null;
+    expect(chip?.getAttribute("tabindex")).toBe("0");
+
+    chip?.dispatchEvent(pointerEnter(h));
+    const tip = h.document.getElementById("tip");
+    expect(tip?.className).toContain("show");
+    expect(tip?.innerHTML).toContain("Radish");
+    expect(tip?.innerHTML).toContain("40g");
+  });
+
+  it("names a good when you hover it in the stock list", async () => {
+    const state = fixtureState();
+    state.stand = { pumpkin: 2 };
+    state.customers = [];
+    const h = await mount(state);
+
+    const chip = h.document.querySelector("#stand-stock .chip") as HTMLElement | null;
+    chip?.dispatchEvent(pointerEnter(h));
+    expect(h.document.getElementById("tip")?.innerHTML).toContain("Pumpkin");
+  });
+
+  it("names a good when you hover it in a customer's basket", async () => {
+    const state = fixtureState();
+    state.customers = [
+      {
+        id: "cu1",
+        name: "Marta",
+        portrait: 0,
+        wants: [{ good: "strawberry", qty: 3, label: "3 strawberries" }],
+        yourPrice: 165,
+        affordable: true,
+        patienceLeft: 100,
+        patienceTotal: 150,
+        x: 7,
+        y: 10,
+        canFulfill: true,
+        missing: [],
+      },
+    ];
+    const h = await mount(state);
+
+    const icon = h.document.querySelector("#customers .wants .glyph") as HTMLElement | null;
+    expect(icon?.getAttribute("tabindex")).toBe("0");
+    icon?.dispatchEvent(pointerEnter(h));
+    expect(h.document.getElementById("tip")?.innerHTML).toContain("Strawberry");
+  });
+
+  it("hides the tooltip again on leave", async () => {
+    const state = fixtureState();
+    state.stand = { egg: 2 };
+    const h = await mount(state);
+
+    const chip = h.document.querySelector("#stand-stock .chip") as HTMLElement | null;
+    chip?.dispatchEvent(pointerEnter(h));
+    expect(h.document.getElementById("tip")?.className).toContain("show");
+
+    chip?.dispatchEvent(new h.dom.window.Event("pointerleave"));
+    expect(h.document.getElementById("tip")?.className).not.toContain("show");
+  });
+
+  it("describes an investment on hover", async () => {
+    const state = fixtureState();
+    const h = await mount(state);
+
+    const row = h.document.querySelector("#upgrades .upgrade") as HTMLElement | null;
+    row?.dispatchEvent(pointerEnter(h));
+    const tip = h.document.getElementById("tip")?.innerHTML ?? "";
+    expect(tip).toContain(state.upgrades[0]?.name as string);
+    expect(tip).toContain("costs");
   });
 });
