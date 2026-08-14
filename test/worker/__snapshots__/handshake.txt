@@ -42,6 +42,276 @@
         "execution": {
           "taskSupport": "forbidden"
         }
+      },
+      {
+        "name": "get_farm_state",
+        "title": "Look at the farm",
+        "description": "The complete live picture of the farm: the map, all 12 plots with their crop, growth stage, moisture and time-to-ripe, every animal with mood and uncollected produce, Wren's position, current task, queue and stamina, barn and stand inventories, gold, reputation, the game clock, and any customers waiting. Call this whenever the player asks what's happening, when you need to check something before acting, or to see what changed while you were talking — the world keeps ticking between messages.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "assign_tasks",
+        "title": "Give Wren a list of jobs",
+        "description": "Queue work for Wren, in order. This is the main way to play, and it is designed for batches: send everything the player asked for in one call rather than one call per job.\n\nTask types: till (prepare bare soil), plant (needs `crop` and a tilled plot), water, harvest, feed, collect (fetch eggs/milk from the animals), pet, restock (carry goods from the barn out to the farm stand, which is the ONLY place customers can buy from), and idle.\n\nTargets: plots are \"plot_1\"..\"plot_12\". Animal tasks take an animal id, an animal name, or a group: \"all_chickens\", \"all_cows\", \"all_animals\". restock takes a good (\"tomato\", \"egg\") or \"all\", with an optional `qty`.\n\nExample: [{\"type\":\"till\",\"target\":\"plot_3\"},{\"type\":\"plant\",\"target\":\"plot_3\",\"crop\":\"tomato\"},{\"type\":\"water\",\"target\":\"plot_3\"},{\"type\":\"feed\",\"target\":\"all_chickens\"}]\n\nOrdering is respected, and the batch is validated as a sequence — so till-then-plant on the same plot is accepted even though the plot is untilled right now. Every task comes back with an individual accepted/rejected verdict and a plain reason, so relay any rejection to the player rather than silently retrying.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tasks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "till",
+                      "plant",
+                      "water",
+                      "harvest",
+                      "feed",
+                      "collect",
+                      "restock",
+                      "pet",
+                      "idle"
+                    ],
+                    "description": "What kind of work this is."
+                  },
+                  "target": {
+                    "type": "string",
+                    "description": "Plot id, animal id/name, animal group, or good id — see the description."
+                  },
+                  "crop": {
+                    "type": "string",
+                    "enum": [
+                      "radish",
+                      "lettuce",
+                      "tomato",
+                      "corn",
+                      "strawberry",
+                      "pumpkin"
+                    ],
+                    "description": "Which crop to sow. Required for plant tasks."
+                  },
+                  "qty": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "description": "How many units to carry, for restock tasks."
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1,
+              "description": "The jobs to queue, in the order Wren should do them."
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "append",
+                "replace"
+              ],
+              "description": "Default \"append\" adds to the end of the queue. \"replace\" clears the pending queue first (the job she is already doing is allowed to finish)."
+            }
+          },
+          "required": [
+            "tasks"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "clear_task_queue",
+        "title": "Clear Wren's queue",
+        "description": "Drops every pending task. The job Wren is in the middle of is allowed to finish, since abandoning a half-dug bed helps nobody. Use this when the player changes their mind about a plan (\"actually, forget all that\").",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "reorder_task_queue",
+        "title": "Reorder Wren's queue",
+        "description": "Rearranges the pending queue. Pass task ids (from assign_tasks or get_farm_state) in the order you want them done. Any queued task you leave out keeps its relative order at the back, so you can promote one urgent job without respecifying the whole list.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "order": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "description": "Task ids in their new order. Omitted tasks fall to the back."
+            }
+          },
+          "required": [
+            "order"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "buy_supplies",
+        "title": "Buy from the supply shop",
+        "description": "Buys seeds, animal feed, or livestock. Delivery is instant and costs Wren no time, so this never needs a task.\n\nItems: radish_seed, lettuce_seed, tomato_seed, corn_seed, strawberry_seed, pumpkin_seed, feed, chicken, cow. Feed is cheaper in lots of 10. Animals are limited by housing (6 chickens in the coop, 3 cows in the barn).\n\nCall get_almanac for prices and payback times. If the purse is short, or the coop is full, this returns an error explaining exactly what is wrong — pass that back to the player instead of retrying.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "item": {
+              "type": "string",
+              "description": "What to buy. One of: radish_seed, lettuce_seed, tomato_seed, corn_seed, strawberry_seed, pumpkin_seed, feed, chicken, cow."
+            },
+            "quantity": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "How many to buy."
+            }
+          },
+          "required": [
+            "item",
+            "quantity"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "list_waiting_customers",
+        "title": "See who is at the stand",
+        "description": "Lists the customers currently waiting at the farm stand: name, what they want, what they're offering, how many game-minutes of patience they have left, and — importantly — whether the stand can actually fill their order right now. If it can't, the response names what is short so you can queue a restock task before they give up and walk (which costs reputation).",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "sell_to_customer",
+        "title": "Sell to a waiting customer",
+        "description": "Completes a sale. Pass `accept: true` to take the customer's offer, which always works if the stand has the goods. Or pass `counterPrice` to haggle: each customer has a private ceiling, and a counter within it earns more gold. Push too far and they usually refuse — and sometimes walk out, costing reputation.\n\nGoods come off the FARM STAND, not barn storage. If the stand is short, this returns what is missing so you can queue a restock task; the customer keeps waiting meanwhile.\n\nAccepting the asking price is the safe play and still builds reputation. Haggle when the player asks you to, or when a basket looks clearly underpriced.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "customerId": {
+              "type": "string",
+              "description": "Customer id from list_waiting_customers, or simply their name (\"Marta\")."
+            },
+            "accept": {
+              "type": "boolean",
+              "description": "True to accept their offer as-is. Ignored if counterPrice is given."
+            },
+            "counterPrice": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Ask this price instead of their offer. Risky above their hidden ceiling."
+            }
+          },
+          "required": [
+            "customerId"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "rename",
+        "title": "Rename Wren or an animal",
+        "description": "Renames the farmhand or any animal. Use who: \"wren\" for the farmhand, or an animal id or current name (\"Nugget\") for an animal. Purely cosmetic, and exactly the kind of thing players like to do — take the request at face value.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "who": {
+              "type": "string",
+              "description": "\"wren\", or an animal id or name."
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "description": "The new name."
+            }
+          },
+          "required": [
+            "who",
+            "name"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "new_farm",
+        "title": "Start over with a fresh farm",
+        "description": "Wipes this farm and starts a brand-new one: 500g, a few seeds, one chicken, twelve untilled plots. Everything the player has built is destroyed and cannot be recovered, so only call this when they have clearly and deliberately asked to start over. Requires confirm: true.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "confirm": {
+              "type": "boolean",
+              "description": "Must be true. Guards against wiping a farm on a casual mention of restarting."
+            },
+            "wrenName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "description": "Name for the new farmhand."
+            }
+          },
+          "required": [
+            "confirm"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "annotations": {
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
       }
     ]
   },

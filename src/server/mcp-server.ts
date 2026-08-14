@@ -8,6 +8,8 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { almanacText, buildAlmanac } from "../tools/almanac.ts";
+import { registerFarmTools } from "../tools/farm-tools.ts";
+import type { FarmStore } from "../tools/store.ts";
 import { SERVER_INSTRUCTIONS } from "./instructions.ts";
 
 export const SERVER_INFO = {
@@ -15,7 +17,7 @@ export const SERVER_INFO = {
   version: "0.1.0",
 } as const;
 
-export function createMcpServer(): McpServer {
+export function createMcpServer(store: FarmStore): McpServer {
   const server = new McpServer(SERVER_INFO, {
     instructions: SERVER_INSTRUCTIONS,
     capabilities: {
@@ -25,9 +27,7 @@ export function createMcpServer(): McpServer {
   });
 
   registerAlmanacTool(server);
-
-  // Farm tools (get_farm_state, assign_tasks, commerce, meta) are registered in
-  // M2 once the simulation and persistence layers exist.
+  registerFarmTools(server, store);
 
   return server;
 }

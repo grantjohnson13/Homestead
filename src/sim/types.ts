@@ -193,6 +193,12 @@ export interface FarmState {
 
   /** Rolling log; trimmed to MAX_EVENTS. */
   events: GameEvent[];
+  /**
+   * Total events ever logged, including ones since trimmed away. Tools use this
+   * as a cursor: an index into `events` would silently break the moment the log
+   * is trimmed, which is exactly when a lot has happened.
+   */
+  eventsLogged: number;
   /** Clock minute at which the next customer is due. */
   nextCustomerAt: number;
   /** Flavour unlocks earned by reputation. */

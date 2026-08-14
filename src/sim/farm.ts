@@ -7,7 +7,13 @@ import { FEED_ITEM_ID } from "../data/items.ts";
 import { PLOT_TILES, WREN_HOME } from "../data/map.ts";
 import { CUSTOMERS, MAX_EVENTS, REPUTATION, STAMINA, STARTING } from "./constants.ts";
 import { poissonInterval } from "./rng.ts";
-import { STATE_VERSION, type Animal, type EventKind, type FarmState } from "./types.ts";
+import {
+  STATE_VERSION,
+  type Animal,
+  type EventKind,
+  type FarmState,
+  type GameEvent,
+} from "./types.ts";
 
 export const DEFAULT_WREN_NAME = "Wren";
 
@@ -54,6 +60,7 @@ export function createFarm(seed: number, nowMs: number): FarmState {
 
     customers: [],
     events: [],
+    eventsLogged: 0,
     nextCustomerAt: 0,
     certificates: [],
     counters: {},
@@ -126,14 +133,20 @@ export function hasItems(bag: Record<string, number>, id: string, qty: number): 
 
 export function logEvent(state: FarmState, kind: EventKind, text: string): void {
   state.events.push({ at: Math.floor(state.clock), kind, text });
+  state.eventsLogged += 1;
   if (state.events.length > MAX_EVENTS) {
     state.events.splice(0, state.events.length - MAX_EVENTS);
   }
 }
 
-/** Events recorded at or after `since` — what a tool result should narrate. */
-export function eventsSince(state: FarmState, since: number) {
-  return state.events.filter((e) => e.at >= since);
+/**
+ * Events logged since the cursor (a previous `state.eventsLogged` reading).
+ * Anything already trimmed out of the rolling window is simply gone.
+ */
+export function eventsSince(state: FarmState, cursor: number): GameEvent[] {
+  const wanted = Math.max(0, state.eventsLogged - cursor);
+  if (wanted <= 0) return [];
+  return state.events.slice(Math.max(0, state.events.length - wanted));
 }
 
 export function findPlot(state: FarmState, plotId: string) {

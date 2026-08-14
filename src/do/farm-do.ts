@@ -10,6 +10,27 @@ import { DurableObject } from "cloudflare:workers";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createMcpServer } from "../server/mcp-server.ts";
 import type { Env } from "../server/env.ts";
+import type { FarmState } from "../sim/index.ts";
+import type { FarmStore } from "../tools/store.ts";
+
+const FARM_KEY = "farm";
+
+/** Backs the tool layer with this Durable Object's own storage. */
+class DurableFarmStore implements FarmStore {
+  constructor(private readonly ctx: DurableObjectState) {}
+
+  now(): number {
+    return Date.now();
+  }
+
+  async read(): Promise<FarmState | null> {
+    return (await this.ctx.storage.get<FarmState>(FARM_KEY)) ?? null;
+  }
+
+  async write(state: FarmState): Promise<void> {
+    await this.ctx.storage.put(FARM_KEY, state);
+  }
+}
 
 export class FarmDurableObject extends DurableObject<Env> {
   /**
@@ -20,8 +41,10 @@ export class FarmDurableObject extends DurableObject<Env> {
    * is fully materialized when `handleRequest` resolves, so buffering it before
    * teardown is safe and lets us close cleanly rather than leaking a transport.
    */
+  private readonly store: FarmStore = new DurableFarmStore(this.ctx);
+
   override async fetch(request: Request): Promise<Response> {
-    const server = createMcpServer();
+    const server = createMcpServer(this.store);
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,
