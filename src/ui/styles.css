@@ -413,6 +413,51 @@ body {
   font-size: 12px;
 }
 
+.card h2.spaced {
+  margin-top: 10px;
+}
+
+/* Stock chips: what is on the counter, and what is still in the barn. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  white-space: nowrap;
+}
+
+/* A good someone at the stand is asking for right now. */
+.chip.wanted {
+  background: #f4d78a;
+  color: #6b4f1f;
+  font-weight: 650;
+}
+
+/* Sitting in the barn while a customer waits for it out front. */
+.chip.needed {
+  background: rgba(194, 80, 70, 0.16);
+  color: var(--danger);
+  font-weight: 650;
+}
+
+/* Count of goods sitting on the stand, drawn over the counter. */
+.stand-count {
+  font: 700 9px var(--font);
+  fill: #6b4f1f;
+}
+
+.stand-badge {
+  fill: #f4d78a;
+  stroke: rgba(0, 0, 0, 0.18);
+  stroke-width: 0.6;
+}
+
 .cust {
   display: flex;
   gap: 7px;

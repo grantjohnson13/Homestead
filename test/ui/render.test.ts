@@ -371,6 +371,103 @@ describe("the side panel and ticker", () => {
     expect(card?.querySelector(".ok")?.textContent).toContain("can serve");
   });
 
+  it("shows what is on the stand and what is in the barn", async () => {
+    const state = fixtureState();
+    state.stand = { egg: 3, radish: 2 };
+    state.inventory = { tomato: 5, radish_seed: 4, feed: 9 };
+    state.customers = [];
+    const h = await mount(state);
+
+    const stand = h.document.getElementById("stand-stock")?.textContent ?? "";
+    expect(stand).toContain("3 eggs");
+    expect(stand).toContain("2 radishes");
+
+    const barn = h.document.getElementById("barn-stock")?.textContent ?? "";
+    expect(barn).toContain("5 tomatoes");
+    // Seeds and feed are supplies, not sellable goods.
+    expect(barn).not.toContain("seed");
+    expect(barn).not.toContain("feed");
+  });
+
+  it("says so when the stand is bare", async () => {
+    const state = fixtureState();
+    state.stand = {};
+    const h = await mount(state);
+    expect(h.document.querySelector("#stand-stock .empty")?.textContent).toContain("Nothing");
+  });
+
+  it("highlights a good someone is asking for", async () => {
+    const state = fixtureState();
+    state.stand = { egg: 4, pumpkin: 1 };
+    state.customers = [
+      {
+        id: "cu1",
+        name: "Marta",
+        portrait: 0,
+        wants: [{ good: "egg", qty: 2, label: "2 eggs" }],
+        offer: 40,
+        patienceLeft: 100,
+        patienceTotal: 150,
+        x: 7,
+        y: 10,
+        canFulfill: true,
+        missing: [],
+      },
+    ];
+    const h = await mount(state);
+
+    const wanted = h.document.querySelectorAll("#stand-stock .chip.wanted");
+    expect(wanted).toHaveLength(1);
+    expect(wanted[0]?.textContent).toContain("eggs");
+  });
+
+  it("flags a good stuck in the barn while a customer waits for it", async () => {
+    const state = fixtureState();
+    state.stand = {};
+    state.inventory = { radish: 6 };
+    state.customers = [
+      {
+        id: "cu1",
+        name: "Fen",
+        portrait: 4,
+        wants: [{ good: "radish", qty: 2, label: "2 radishes" }],
+        offer: 47,
+        patienceLeft: 40,
+        patienceTotal: 150,
+        x: 8,
+        y: 10,
+        canFulfill: false,
+        missing: ["2 radishes"],
+      },
+    ];
+    const h = await mount(state);
+
+    // This is the exact failure that cost two customers in real play: the goods
+    // existed, but they were in the barn instead of on the counter.
+    const needed = h.document.querySelectorAll("#barn-stock .chip.needed");
+    expect(needed).toHaveLength(1);
+    expect(needed[0]?.textContent).toContain("radishes");
+    expect(needed[0]?.getAttribute("title")).toContain("restock");
+  });
+
+  it("counts the stand's goods on the board itself", async () => {
+    const state = fixtureState();
+    state.stand = { egg: 3, radish: 2 };
+    const h = await mount(state);
+
+    const badge = h.document.querySelector("#plots .stand-badge");
+    const count = h.document.querySelector("#plots .stand-count");
+    expect(badge).not.toBeNull();
+    expect(count?.textContent).toBe("5");
+  });
+
+  it("draws no badge when the stand is empty", async () => {
+    const state = fixtureState();
+    state.stand = {};
+    const h = await mount(state);
+    expect(h.document.querySelector("#plots .stand-badge")).toBeNull();
+  });
+
   it("shows the gold, reputation and clock", async () => {
     const state = fixtureState();
     state.gold = 777;

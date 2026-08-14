@@ -15,6 +15,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CROPS } from "../src/data/crops.ts";
+import { GOODS, GOOD_IDS } from "../src/data/items.ts";
 import { MAP_ART, MAP_HEIGHT, MAP_WIDTH } from "../src/data/map.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -38,6 +39,11 @@ function embedPayload(): string {
       art: MAP_ART,
     },
     crops: Object.fromEntries(Object.values(CROPS).map((crop) => [crop.id, { name: crop.name }])),
+    // Names and plurals for anything the barn or stand can hold, so the view can
+    // write "3 eggs" and "1 pumpkin" without shipping its own English rules.
+    goods: Object.fromEntries(
+      GOOD_IDS.map((id) => [id, { name: GOODS[id].name, plural: GOODS[id].plural }]),
+    ),
   };
   // </script> inside a JSON literal would close the enclosing script tag.
   return `window.__HOMESTEAD__ = ${JSON.stringify(payload).replace(/</g, "\\u003c")};`;

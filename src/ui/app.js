@@ -430,6 +430,7 @@
     if (!layers) return;
 
     renderPlots();
+    renderStandBadge();
     renderActors(isFirst);
     renderHud();
     renderSide();
@@ -473,6 +474,38 @@
         }
       }
     });
+  }
+
+  /**
+   * A count of goods sitting on the counter, drawn over the stand itself, so
+   * "can I serve anyone?" is answerable at a glance from the board alone.
+   */
+  function renderStandBadge() {
+    var layer = layers.plots;
+    var stand = farm.stand || {};
+    var total = 0;
+    Object.keys(stand).forEach(function (id) {
+      total += stand[id];
+    });
+    if (total <= 0) return;
+
+    var origin = buildingOrigin("S");
+    if (!origin) return;
+
+    var cx = origin.x * TILE + TILE;
+    var cy = origin.y * TILE - 2;
+
+    var badge = svg("circle", { class: "stand-badge", cx: cx, cy: cy, r: 6.5 });
+    var label = svg("text", {
+      class: "stand-count",
+      x: cx,
+      y: cy + 3.2,
+      "text-anchor": "middle",
+    });
+    label.textContent = String(total);
+
+    layer.appendChild(badge);
+    layer.appendChild(label);
   }
 
   /**
@@ -888,6 +921,8 @@
       }
     }
 
+    renderStock();
+
     var list = document.getElementById("customers");
     list.textContent = "";
     if (farm.customers.length === 0) {
@@ -897,6 +932,70 @@
         list.appendChild(customerCard(customer));
       });
     }
+  }
+
+  /** "3 eggs", "1 pumpkin" — using the plurals embedded from src/data. */
+  function describeGood(id, qty) {
+    var def = (EMBED.goods && EMBED.goods[id]) || null;
+    if (!def) return qty + " " + id;
+    return qty + " " + (qty === 1 ? def.name.toLowerCase() : def.plural);
+  }
+
+  /**
+   * What is on the counter and what is still in the barn.
+   *
+   * Without this the player cannot tell whether an arriving customer can be
+   * served, which is the single thing that decides a sale. Goods someone is
+   * asking for are highlighted, and anything sitting in the barn while a
+   * customer waits for it out front is flagged — that means "queue a restock".
+   */
+  function renderStock() {
+    var wanted = {};
+    farm.customers.forEach(function (customer) {
+      customer.wants.forEach(function (want) {
+        wanted[want.good] = (wanted[want.good] || 0) + want.qty;
+      });
+    });
+
+    var stand = farm.stand || {};
+    var barn = farm.inventory || {};
+
+    fillChips("stand-stock", stand, "Nothing on the stand", function (good) {
+      return wanted[good] ? "wanted" : "";
+    });
+
+    // Only goods are worth showing in the barn; seeds and feed are supplies.
+    var barnGoods = {};
+    Object.keys(barn).forEach(function (id) {
+      if (EMBED.goods && EMBED.goods[id]) barnGoods[id] = barn[id];
+    });
+
+    fillChips("barn-stock", barnGoods, "Barn is empty", function (good) {
+      var short = (wanted[good] || 0) - (stand[good] || 0);
+      return short > 0 ? "needed" : "";
+    });
+  }
+
+  function fillChips(elementId, bag, emptyText, classFor) {
+    var host = document.getElementById(elementId);
+    if (!host) return;
+    host.textContent = "";
+
+    var ids = Object.keys(bag).filter(function (id) {
+      return bag[id] > 0;
+    });
+
+    if (ids.length === 0) {
+      host.appendChild(el("span", "empty", emptyText));
+      return;
+    }
+
+    ids.sort().forEach(function (id) {
+      var extra = classFor(id);
+      var chip = el("span", "chip" + (extra ? " " + extra : ""), describeGood(id, bag[id]));
+      if (extra === "needed") chip.title = "Someone at the stand wants this — queue a restock.";
+      host.appendChild(chip);
+    });
   }
 
   function customerCard(customer) {
