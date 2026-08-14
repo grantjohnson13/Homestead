@@ -724,12 +724,90 @@ describe("the side panel and ticker", () => {
 });
 
 describe("tooltips", () => {
-  it("puts a hit area over every plot, animal and customer", async () => {
+  it("puts a hit area over everything on the board", async () => {
     const state = fixtureState();
     const h = await mount(state);
 
+    // Five buildings, every plot, every animal, every customer, and Wren.
     const hits = h.document.querySelectorAll("#hits .tile-hit");
-    expect(hits.length).toBe(state.plots.length + state.animals.length + state.customers.length);
+    expect(hits.length).toBe(
+      5 + state.plots.length + state.animals.length + state.customers.length + 1,
+    );
+  });
+
+  it("names each building on hover", async () => {
+    const cases: [number, number, string][] = [
+      [1, 1, "Farmhouse"],
+      [13, 1, "Coop"],
+      [12, 5, "Barn"],
+      [7, 9, "Farm stand"],
+      [1, 9, "Well"],
+    ];
+
+    for (const [tileX, tileY, expected] of cases) {
+      const h = await mount();
+      const hit = Array.from(h.document.querySelectorAll("#hits .tile-hit")).find(
+        (node) =>
+          Number(node.getAttribute("x")) === tileX * 24 &&
+          Number(node.getAttribute("y")) === tileY * 24,
+      );
+
+      expect(hit, expected).toBeDefined();
+      (hit as unknown as HTMLElement).dispatchEvent(pointerEnter(h));
+      expect(h.document.getElementById("tip")?.innerHTML).toContain(expected);
+
+      h.close();
+      host = null;
+    }
+  });
+
+  it("describes Wren on hover", async () => {
+    const state = fixtureState();
+    state.wren = {
+      ...state.wren,
+      name: "Rowan",
+      x: 5,
+      y: 4,
+      stamina: 42,
+      exhausted: false,
+      currentTask: { type: "water", target: "plot_1", action: "water" },
+      carrying: [{ good: "tomato", qty: 3 }],
+    };
+    const h = await mount(state);
+
+    // Wren is added last so she wins wherever she stands — here, on a plot.
+    const hits = Array.from(h.document.querySelectorAll("#hits .tile-hit"));
+    const last = hits[hits.length - 1] as unknown as HTMLElement;
+
+    last.dispatchEvent(pointerEnter(h));
+    const tip = h.document.getElementById("tip")?.innerHTML ?? "";
+    expect(tip).toContain("Rowan");
+    expect(tip).toContain("42/100");
+    expect(tip).toContain("3 tomatoes");
+  });
+
+  it("tells the coop and barn what they are holding", async () => {
+    const state = fixtureState();
+    state.inventory = { strawberry: 7 };
+    state.animals = [{ ...state.animals[0]!, kind: "chicken", ready: 2, fed: false }];
+    const h = await mount(state);
+
+    const hits = Array.from(h.document.querySelectorAll("#hits .tile-hit"));
+    const coop = hits.find(
+      (n) => Number(n.getAttribute("x")) === 13 * 24,
+    ) as unknown as HTMLElement;
+    const barn = hits.find(
+      (n) => Number(n.getAttribute("x")) === 12 * 24 && Number(n.getAttribute("y")) === 5 * 24,
+    ) as unknown as HTMLElement;
+
+    coop.dispatchEvent(pointerEnter(h));
+    let tip = h.document.getElementById("tip")?.innerHTML ?? "";
+    expect(tip).toContain("2 eggs");
+    expect(tip).toContain("hungry");
+
+    barn.dispatchEvent(pointerEnter(h));
+    tip = h.document.getElementById("tip")?.innerHTML ?? "";
+    expect(tip).toContain("7 strawberries");
   });
 
   it("makes hit areas keyboard reachable", async () => {

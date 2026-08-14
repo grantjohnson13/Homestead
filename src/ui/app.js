@@ -759,9 +759,36 @@
 
   var tip = null;
 
+  /**
+   * Everything on the board that has something to say.
+   *
+   * Terrain is deliberately left out — grass has no story — but every building,
+   * plot, animal, customer and Wren herself answers a hover.
+   */
+  var BUILDING_HITS = [
+    { char: "H", w: 2, h: 2, tip: farmhouseTip },
+    { char: "C", w: 2, h: 2, tip: coopTip },
+    { char: "B", w: 2, h: 2, tip: barnTip },
+    { char: "S", w: 2, h: 1, tip: standTip },
+    { char: "W", w: 1, h: 1, tip: wellTip },
+  ];
+
   function renderHits() {
     var layer = layers.hits;
     layer.textContent = "";
+
+    BUILDING_HITS.forEach(function (building) {
+      var origin = buildingOrigin(building.char);
+      if (!origin) return;
+      addHit(
+        layer,
+        origin.x * TILE,
+        origin.y * TILE,
+        building.w * TILE,
+        building.h * TILE,
+        building.tip(),
+      );
+    });
 
     farm.plots.forEach(function (plot) {
       addHit(layer, plot.x * TILE, plot.y * TILE, TILE, TILE, plotTip(plot));
@@ -782,6 +809,129 @@
     farm.customers.forEach(function (customer) {
       addHit(layer, customer.x * TILE, customer.y * TILE, TILE, TILE, customerTip(customer));
     });
+
+    // Wren last, so she wins wherever she is standing.
+    addHit(layer, farm.wren.x * TILE, farm.wren.y * TILE, TILE, TILE, wrenTip());
+  }
+
+  function wrenTip() {
+    var wren = farm.wren;
+    var lines = ["<b>" + escapeHtml(wren.name) + "</b>"];
+
+    if (wren.exhausted) lines.push("Worn out — resting before the next job.");
+    else if (wren.currentTask) {
+      var task = wren.currentTask;
+      lines.push(
+        task.action === "walking"
+          ? "Walking to " + escapeHtml(String(task.target || task.type))
+          : capitalize(escapeHtml(task.action)) +
+              (task.target ? " " + escapeHtml(task.target.replace("_", " ")) : ""),
+      );
+    } else lines.push("Nothing on the list.");
+
+    lines.push('<span class="muted">Stamina ' + wren.stamina + "/100</span>");
+    if (wren.queue.length > 0) {
+      lines.push(
+        '<span class="muted">' + wren.queue.length + " job(s) queued</span>",
+      );
+    }
+    if (wren.carrying && wren.carrying.length > 0) {
+      lines.push(
+        '<span class="muted">Carrying ' +
+          escapeHtml(
+            wren.carrying
+              .map(function (c) {
+                return describeGood(c.good, c.qty);
+              })
+              .join(", "),
+          ) +
+          "</span>",
+      );
+    }
+    return lines.join("<br>");
+  }
+
+  function farmhouseTip() {
+    return [
+      "<b>Farmhouse</b>Where " + escapeHtml(farm.wren.name) + " lives.",
+      '<span class="muted">She rests here when there is nothing to do, and gets her stamina back fastest.</span>',
+    ].join("<br>");
+  }
+
+  function coopTip() {
+    var chickens = farm.animals.filter(function (a) {
+      return a.kind === "chicken";
+    });
+    var eggs = chickens.reduce(function (sum, a) {
+      return sum + a.ready;
+    }, 0);
+    var hungry = chickens.filter(function (a) {
+      return !a.fed;
+    }).length;
+
+    return [
+      "<b>Coop</b>" + chickens.length + " chicken" + (chickens.length === 1 ? "" : "s"),
+      eggs > 0
+        ? escapeHtml(describeGood("egg", eggs)) + " waiting to be collected"
+        : '<span class="muted">Nothing to collect yet.</span>',
+      hungry > 0
+        ? '<span class="muted">' + hungry + " hungry — they lay nothing unfed.</span>"
+        : '<span class="muted">All fed.</span>',
+    ].join("<br>");
+  }
+
+  function barnTip() {
+    var stored = [];
+    var total = 0;
+    Object.keys(farm.inventory || {}).forEach(function (id) {
+      if (EMBED.goods && EMBED.goods[id] && farm.inventory[id] > 0) {
+        stored.push(describeGood(id, farm.inventory[id]));
+        total += farm.inventory[id];
+      }
+    });
+    var cows = farm.animals.filter(function (a) {
+      return a.kind === "cow";
+    });
+
+    return [
+      "<b>Barn &amp; storage</b>" +
+        (total > 0 ? escapeHtml(stored.join(", ")) : "Nothing stored."),
+      cows.length > 0
+        ? cows.length + " cow" + (cows.length === 1 ? "" : "s") + " in here too"
+        : '<span class="muted">No cows yet.</span>',
+      '<span class="muted">Harvests land here. Customers buy from the stand, so goods need carrying over.</span>',
+    ].join("<br>");
+  }
+
+  function standTip() {
+    var onStand = 0;
+    var goods = [];
+    Object.keys(farm.stand || {}).forEach(function (id) {
+      if (farm.stand[id] > 0) {
+        goods.push(describeGood(id, farm.stand[id]));
+        onStand += farm.stand[id];
+      }
+    });
+
+    var lines = [
+      "<b>Farm stand</b>" + (onStand > 0 ? escapeHtml(goods.join(", ")) : "The counter is bare."),
+    ];
+    lines.push(
+      farm.customers.length > 0
+        ? farm.customers.length + " browsing right now"
+        : '<span class="muted">Nobody here at the moment.</span>',
+    );
+    if (farm.standStatus && !farm.standStatus.open) {
+      lines.push('<span class="muted">' + escapeHtml(farm.standStatus.reason) + "</span>");
+    }
+    return lines.join("<br>");
+  }
+
+  function wellTip() {
+    return [
+      "<b>Well</b>Where " + escapeHtml(farm.wren.name) + " fills her watering can.",
+      '<span class="muted">' + farm.wren.waterCharges + " watering(s) left in the can.</span>",
+    ].join("<br>");
   }
 
   /**
