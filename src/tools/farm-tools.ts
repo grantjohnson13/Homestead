@@ -13,9 +13,13 @@ import { CROP_IDS } from "../data/crops.ts";
 import { GOOD_IDS, describeGood } from "../data/items.ts";
 import { PLOT_IDS } from "../data/map.ts";
 import { SHOP_ITEMS } from "../data/shop.ts";
+import { UPGRADES, UPGRADE_IDS } from "../data/upgrades.ts";
 import {
   DEFAULT_WREN_NAME,
   buySupplies,
+  buyUpgrade,
+  logEvent,
+  upgradeCatalogue,
   createFarm,
   findAnimal,
   fulfillment,
@@ -55,6 +59,7 @@ export function registerFarmTools(server: McpServer, store: FarmStore): void {
   registerReorderQueue(server, store);
   registerBuySupplies(server, store);
   registerSetPrices(server, store);
+  registerBuyUpgrade(server, store);
   registerListCustomers(server, store);
   registerSellToCustomer(server, store);
   registerRename(server, store);
@@ -367,6 +372,67 @@ function registerSetPrices(server: McpServer, store: FarmStore): void {
         eventCursor,
         awaySummary: takeAwaySummary(state),
         extra: { changes: result.changes, insights: pricingInsights(state) },
+      });
+    },
+  );
+}
+
+function registerBuyUpgrade(server: McpServer, store: FarmStore): void {
+  registerFarmViewTool(
+    server,
+    "buy_upgrade",
+    {
+      title: "Invest in the farm",
+      description:
+        "Spends gold on a permanent improvement. This is the long game: money out of circulation " +
+        "now to loosen a constraint forever.\n\n" +
+        "Each upgrade has two levels, and the second costs more than the first. Investments " +
+        "target the three things that actually limit a farm:\n" +
+        "  · Wren's time — watering_can (+4 waterings per well trip), wheelbarrow (+8 carried " +
+        "per restock), sprinklers (waterings last 30% longer)\n" +
+        "  · Customer flow — market_stall (18% more arrivals), signboard (customers wait 35% " +
+        "longer), fine_stand (customers pay 12% more)\n" +
+        "  · Housing — coop_extension (+2 chickens), barn_extension (+1 cow)\n\n" +
+        "Customer throughput is what really caps a farm's income, so market_stall and fine_stand " +
+        "change the game most — and cost most. Call get_farm_state or get_almanac to see current " +
+        "levels and prices.",
+      inputSchema: {
+        upgrade: z.string().describe(`What to invest in. One of: ${UPGRADE_IDS.join(", ")}.`),
+      },
+    },
+    async ({ upgrade }) => {
+      const { state, result, eventCursor } = await withFarm(store, (farm) => {
+        const outcome = buyUpgrade(farm, upgrade);
+        if (outcome.ok) {
+          logEvent(
+            farm,
+            "economy",
+            `Invested ${outcome.cost}g in ${UPGRADES[outcome.id].name} (level ${outcome.level}) — ${outcome.effect}.`,
+          );
+        }
+        return outcome;
+      });
+
+      if (!result.ok) {
+        return refusal(result.reason, {
+          state: snapshot(state),
+          catalogue: upgradeCatalogue(state),
+        });
+      }
+
+      return buildResult(state, {
+        summary:
+          `Bought ${UPGRADES[result.id].name} (level ${result.level}) for ${result.cost}g — ` +
+          `${result.effect}. ${state.gold}g left.`,
+        eventCursor,
+        awaySummary: takeAwaySummary(state),
+        extra: {
+          upgrade: result.id,
+          level: result.level,
+          cost: result.cost,
+          gold: state.gold,
+          catalogue: upgradeCatalogue(state),
+        },
       });
     },
   );

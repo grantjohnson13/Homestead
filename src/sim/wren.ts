@@ -13,7 +13,8 @@ import { WREN_HOME, type Point } from "../data/map.ts";
 import { WREN_LINES, type WrenContext } from "../data/wren-lines.ts";
 import { STAMINA } from "./constants.ts";
 import { harvestPlot, isHarvestable, waterPlot } from "./crops.ts";
-import { WATER_CAN_CAPACITY, addItem, countItem, findPlot, logEvent, takeItem } from "./farm.ts";
+import { addItem, countItem, findPlot, logEvent, takeItem } from "./farm.ts";
+import { carryCapacity, moistureMultiplier, waterCanCapacity } from "./upgrades.ts";
 import { feedAnimal, petAnimal } from "./livestock.ts";
 import { findPath, facingFor } from "./pathfind.ts";
 import { pick, randInt } from "./rng.ts";
@@ -177,14 +178,14 @@ function applyLegEffect(state: FarmState, active: ActiveTask, leg: Leg): void {
     }
 
     case "refill":
-      wren.waterCharges = WATER_CAN_CAPACITY;
+      wren.waterCharges = waterCanCapacity(state);
       return;
 
     case "water": {
       const plot = task.target ? findPlot(state, task.target) : undefined;
       if (!plot) return;
       if (wren.waterCharges <= 0) return;
-      if (waterPlot(plot)) {
+      if (waterPlot(plot, moistureMultiplier(state))) {
         wren.waterCharges -= 1;
         logEvent(state, "crop", `${wren.name} watered ${plot.id}.`);
       } else {
@@ -273,11 +274,12 @@ function applyLegEffect(state: FarmState, active: ActiveTask, leg: Leg): void {
     case "load": {
       wren.carrying = [];
       const goods = goodsForRestock(state, task);
-      const limit = task.qty ?? CARRY_CAPACITY;
+      const capacity = carryCapacity(state);
+      const limit = task.qty ?? capacity;
       let carried = 0;
       for (const good of goods) {
-        if (carried >= Math.min(limit, CARRY_CAPACITY)) break;
-        const room = Math.min(limit, CARRY_CAPACITY) - carried;
+        if (carried >= Math.min(limit, capacity)) break;
+        const room = Math.min(limit, capacity) - carried;
         const taken = takeItem(state.inventory, good, room);
         if (taken > 0) {
           wren.carrying.push({ good, qty: taken });

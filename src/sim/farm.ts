@@ -2,11 +2,12 @@
  * Farm construction and the small helpers that everything else builds on.
  */
 
-import { ANIMALS, STARTING_MOOD, defaultAnimalName, type AnimalKind } from "../data/animals.ts";
+import { STARTING_MOOD, defaultAnimalName, type AnimalKind } from "../data/animals.ts";
 import { FEED_ITEM_ID, GOODS, GOOD_IDS } from "../data/items.ts";
 import { PLOT_TILES, WREN_HOME } from "../data/map.ts";
 import { CUSTOMERS, MAX_EVENTS, REPUTATION, STAMINA, STARTING } from "./constants.ts";
 import { poissonInterval } from "./rng.ts";
+import { housingFor } from "./upgrades.ts";
 import {
   STATE_VERSION,
   type Animal,
@@ -36,6 +37,7 @@ export function createFarm(seed: number, nowMs: number): FarmState {
     // and the player can tune from a sane baseline rather than from zero.
     prices: Object.fromEntries(GOOD_IDS.map((id) => [id, GOODS[id].basePrice])),
     lostSales: [],
+    upgrades: {},
 
     plots: PLOT_TILES.map((tile) => ({
       id: tile.plotId as string,
@@ -112,7 +114,7 @@ export function addAnimal(state: FarmState, kind: AnimalKind, name?: string): An
 
 export function animalCapacityLeft(state: FarmState, kind: AnimalKind): number {
   const housed = state.animals.filter((a) => a.kind === kind).length;
-  return Math.max(0, ANIMALS[kind].capacity - housed);
+  return Math.max(0, housingFor(state, kind) - housed);
 }
 
 /* ------------------------------------------------------------------ items -- */

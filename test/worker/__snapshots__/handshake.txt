@@ -267,6 +267,34 @@
         }
       },
       {
+        "name": "buy_upgrade",
+        "title": "Invest in the farm",
+        "description": "Spends gold on a permanent improvement. This is the long game: money out of circulation now to loosen a constraint forever.\n\nEach upgrade has two levels, and the second costs more than the first. Investments target the three things that actually limit a farm:\n  · Wren's time — watering_can (+4 waterings per well trip), wheelbarrow (+8 carried per restock), sprinklers (waterings last 30% longer)\n  · Customer flow — market_stall (18% more arrivals), signboard (customers wait 35% longer), fine_stand (customers pay 12% more)\n  · Housing — coop_extension (+2 chickens), barn_extension (+1 cow)\n\nCustomer throughput is what really caps a farm's income, so market_stall and fine_stand change the game most — and cost most. Call get_farm_state or get_almanac to see current levels and prices.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "upgrade": {
+              "type": "string",
+              "description": "What to invest in. One of: watering_can, wheelbarrow, sprinklers, market_stall, signboard, fine_stand, coop_extension, barn_extension."
+            }
+          },
+          "required": [
+            "upgrade"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "_meta": {
+          "ui": {
+            "resourceUri": "ui://homestead/farm-view"
+          },
+          "ui/resourceUri": "ui://homestead/farm-view"
+        }
+      },
+      {
         "name": "list_waiting_customers",
         "title": "See who is at the stand",
         "description": "Lists who is browsing the farm stand: name, what they want, what their basket costs at YOUR current prices, how long they'll wait, whether the stand can fill the order, and whether your price is within what they'll pay.\n\nAnyone who is both in stock and affordable buys on their own — you do not need to do anything. This tool is for spotting the ones who won't: restock what is short, or use set_prices if people keep walking over price. It also returns the recent lost-sales log, which reveals what those customers would have paid.",

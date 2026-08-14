@@ -82,6 +82,19 @@ export {
   type TaskVerdict,
 } from "./tasks.ts";
 export { buySupplies, quote, type PurchaseOutcome } from "./economy.ts";
+export {
+  buyUpgrade,
+  upgradeCatalogue,
+  levelOf,
+  waterCanCapacity,
+  carryCapacity,
+  moistureMultiplier,
+  arrivalMultiplier,
+  patienceMinutes,
+  willingnessBonus,
+  housingFor,
+  type UpgradeOutcome,
+} from "./upgrades.ts";
 export { findPath, manhattan, facingFor } from "./pathfind.ts";
 export {
   farmTime,

@@ -328,6 +328,7 @@ describe("the side panel and ticker", () => {
     const state = fixtureState();
     state.wren = {
       ...state.wren,
+      currentTask: null,
       queue: [
         { id: "t1", type: "till", target: "plot_1" },
         { id: "t2", type: "plant", target: "plot_1", crop: "corn" },
@@ -341,9 +342,42 @@ describe("the side panel and ticker", () => {
     expect(items[1]?.textContent).toContain("corn");
   });
 
-  it("says so when the queue is empty", async () => {
+  it("gives each queued task a tool icon", async () => {
     const state = fixtureState();
-    state.wren = { ...state.wren, queue: [] };
+    state.wren = {
+      ...state.wren,
+      currentTask: null,
+      queue: [
+        { id: "t1", type: "till", target: "plot_1" },
+        { id: "t2", type: "water", target: "plot_2" },
+      ],
+    };
+    const h = await mount(state);
+
+    const icons = Array.from(h.document.querySelectorAll("#queue li .glyph use")).map((n) =>
+      n.getAttribute("href"),
+    );
+    expect(icons).toEqual(["#ic-hoe", "#ic-can"]);
+  });
+
+  it("puts the job in hand at the top of the queue, highlighted", async () => {
+    const state = fixtureState();
+    state.wren = {
+      ...state.wren,
+      currentTask: { type: "harvest", target: "plot_3", action: "harvest" },
+      queue: [{ id: "t1", type: "till", target: "plot_1" }],
+    };
+    const h = await mount(state);
+
+    const first = h.document.querySelector("#queue li");
+    expect(first?.className).toContain("now");
+    expect(first?.textContent).toContain("harvest");
+    expect(h.document.querySelectorAll("#queue li")).toHaveLength(2);
+  });
+
+  it("says so when there is nothing to do at all", async () => {
+    const state = fixtureState();
+    state.wren = { ...state.wren, queue: [], currentTask: null };
     const h = await mount(state);
     expect(h.document.querySelector("#queue .empty")?.textContent).toContain("empty");
   });
@@ -370,7 +404,9 @@ describe("the side panel and ticker", () => {
 
     const card = h.document.querySelector("#customers .cust");
     expect(card?.textContent).toContain("Sunni");
-    expect(card?.textContent).toContain("2 tomatoes");
+    expect(card?.textContent).toContain("95g");
+    // The basket is shown as goods glyphs plus counts, not as a sentence.
+    expect(card?.querySelector(".wants .glyph use")?.getAttribute("href")).toBe("#c-tomato");
     expect(card?.querySelector(".ok")?.textContent).toContain("buying now");
   });
 
@@ -551,6 +587,52 @@ describe("the side panel and ticker", () => {
     state.stand = {};
     const h = await mount(state);
     expect(h.document.querySelector("#plots .stand-badge")).toBeNull();
+  });
+
+  it("lists investments with an icon, effect and next price", async () => {
+    const state = fixtureState();
+    state.gold = 1000;
+    const h = await mount(state);
+
+    const rows = h.document.querySelectorAll("#upgrades .upgrade");
+    expect(rows.length).toBe(state.upgrades.length);
+
+    const first = rows[0];
+    expect(first?.querySelector(".glyph use")).not.toBeNull();
+    expect(first?.querySelector(".name")?.textContent?.length).toBeGreaterThan(3);
+    expect(first?.querySelector(".effect")?.textContent?.length).toBeGreaterThan(5);
+    expect(first?.querySelector(".cost")?.textContent).toMatch(/\d+g/);
+  });
+
+  it("highlights an investment you can afford right now", async () => {
+    const state = fixtureState();
+    const cheapest = Math.min(...state.upgrades.map((u) => u.nextCost ?? Number.POSITIVE_INFINITY));
+
+    state.gold = cheapest;
+    const rich = await mount(state);
+    expect(rich.document.querySelectorAll("#upgrades .cost.can").length).toBeGreaterThan(0);
+    rich.close();
+    host = null;
+
+    state.gold = 0;
+    const poor = await mount(state);
+    expect(poor.document.querySelectorAll("#upgrades .cost.can")).toHaveLength(0);
+  });
+
+  it("shows level pips and marks a maxed investment", async () => {
+    const state = fixtureState();
+    state.upgrades = state.upgrades.map((u, i) =>
+      i === 0 ? { ...u, level: u.maxLevel, nextCost: null, owned: true } : u,
+    );
+    const h = await mount(state);
+
+    const first = h.document.querySelector("#upgrades .upgrade");
+    expect(first?.className).toContain("owned");
+    expect(first?.querySelector(".cost.maxed")?.textContent).toBe("max");
+
+    const pips = first?.querySelectorAll(".pip") ?? [];
+    expect(pips.length).toBe(state.upgrades[0]?.maxLevel);
+    expect(Array.from(pips).every((p) => p.className.includes("on"))).toBe(true);
   });
 
   it("shows the gold, reputation and clock", async () => {

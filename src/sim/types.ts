@@ -204,6 +204,8 @@ export interface FarmState {
   prices: Record<string, number>;
   /** Recent customers who left without buying, and why. Trimmed like events. */
   lostSales: LostSale[];
+  /** Investments made, by upgrade id, as a level (absent or 0 = not bought). */
+  upgrades: Record<string, number>;
 
   plots: Plot[];
   animals: Animal[];

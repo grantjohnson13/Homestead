@@ -896,33 +896,35 @@
 
     var queue = document.getElementById("queue");
     queue.textContent = "";
-    if (wren.queue.length === 0) {
+
+    // The job in hand sits at the top of the list, highlighted, so the queue
+    // reads as "now, then next" rather than as a detached to-do list.
+    if (wren.currentTask) {
+      queue.appendChild(
+        queueRow(wren.currentTask, "▶", "now", wren.currentTask.action === "walking"),
+      );
+    }
+
+    if (wren.queue.length === 0 && !wren.currentTask) {
       var none = document.createElement("li");
       none.className = "empty";
       none.textContent = "Queue is empty";
       queue.appendChild(none);
     } else {
-      wren.queue.slice(0, 12).forEach(function (task, i) {
-        var li = document.createElement("li");
-        li.appendChild(el("span", "n", String(i + 1)));
-        li.appendChild(el("span", "what", task.type));
-        if (task.target || task.crop) {
-          li.appendChild(
-            el("span", "where", (task.crop ? task.crop + " → " : "") + (task.target || "")),
-          );
-        }
-        queue.appendChild(li);
+      wren.queue.slice(0, 10).forEach(function (task, i) {
+        queue.appendChild(queueRow(task, String(i + 1), ""));
       });
-      if (wren.queue.length > 12) {
+      if (wren.queue.length > 10) {
         var more = document.createElement("li");
         more.className = "empty";
-        more.textContent = "+" + (wren.queue.length - 12) + " more";
+        more.textContent = "+" + (wren.queue.length - 10) + " more";
         queue.appendChild(more);
       }
     }
 
     renderStock();
     renderPrices();
+    renderUpgrades();
     renderLostSales();
 
     var list = document.getElementById("customers");
@@ -934,6 +936,43 @@
         list.appendChild(customerCard(customer));
       });
     }
+  }
+
+  /** Sprite id to show beside a good in the stock and price lists. */
+  var GOOD_ICON = {
+    radish: "c-radish",
+    lettuce: "c-lettuce",
+    tomato: "c-tomato",
+    corn: "c-corn",
+    strawberry: "c-strawberry",
+    pumpkin: "c-pumpkin",
+    egg: "ic-egg",
+    milk: "ic-milk",
+  };
+
+  /** Sprite id for a queued task, so the queue reads as work rather than words. */
+  var TASK_ICON = {
+    till: "ic-hoe",
+    plant: "c-sprout",
+    water: "ic-can",
+    harvest: "ic-basket",
+    feed: "ic-feed",
+    collect: "ic-basket",
+    restock: "ic-box",
+    pet: "ic-heart",
+    idle: "ic-zzz",
+  };
+
+  /** An inline sprite for use inside HTML (as opposed to on the SVG board). */
+  function glyph(spriteId, big) {
+    var node = document.createElementNS(SVG_NS, "svg");
+    node.setAttribute("class", "glyph" + (big ? " lg" : ""));
+    node.setAttribute("viewBox", "0 0 24 24");
+    node.setAttribute("aria-hidden", "true");
+    var use = document.createElementNS(SVG_NS, "use");
+    use.setAttribute("href", "#" + spriteId);
+    node.appendChild(use);
+    return node;
   }
 
   /** "3 eggs", "1 pumpkin" — using the plurals embedded from src/data. */
@@ -994,9 +1033,78 @@
 
     ids.sort().forEach(function (id) {
       var extra = classFor(id);
-      var chip = el("span", "chip" + (extra ? " " + extra : ""), describeGood(id, bag[id]));
+      var chip = el("span", "chip" + (extra ? " " + extra : ""));
+      if (GOOD_ICON[id]) chip.appendChild(glyph(GOOD_ICON[id]));
+      chip.appendChild(document.createTextNode(describeGood(id, bag[id])));
       if (extra === "needed") chip.title = "Someone at the stand wants this — queue a restock.";
       host.appendChild(chip);
+    });
+  }
+
+  /** One row of the task queue: position, tool glyph, verb, and where. */
+  function queueRow(task, marker, extraClass, walking) {
+    var li = document.createElement("li");
+    if (extraClass) li.className = extraClass;
+    li.appendChild(el("span", "n", marker));
+    li.appendChild(glyph(walking ? "ch-wren-side" : TASK_ICON[task.type] || "ic-basket"));
+    li.appendChild(el("span", "what", walking ? "walking" : task.type));
+    if (task.target || task.crop) {
+      li.appendChild(
+        el(
+          "span",
+          "where",
+          (task.crop ? task.crop + " → " : "") + String(task.target || "").replace("_", " "),
+        ),
+      );
+    }
+    return li;
+  }
+
+  /**
+   * What the farm has been invested in, and what the next level costs. Anything
+   * affordable right now is highlighted, since that is the actionable bit.
+   */
+  function renderUpgrades() {
+    var host = document.getElementById("upgrades");
+    if (!host) return;
+    host.textContent = "";
+
+    var list = farm.upgrades || [];
+    if (list.length === 0) {
+      host.appendChild(el("div", "empty", "Nothing to invest in"));
+      return;
+    }
+
+    list.forEach(function (entry) {
+      var maxed = entry.nextCost === null;
+      var affordable = !maxed && farm.gold >= entry.nextCost;
+
+      var row = el(
+        "div",
+        "upgrade" + (entry.owned ? " owned" : "") + (!entry.owned && !affordable ? " locked" : ""),
+      );
+      row.appendChild(glyph(entry.icon, true));
+
+      var body = el("div", "body");
+      var name = el("span", "name", entry.name);
+      var pips = el("span", "pips");
+      for (var i = 0; i < entry.maxLevel; i++) {
+        pips.appendChild(el("span", "pip" + (i < entry.level ? " on" : "")));
+      }
+      name.appendChild(pips);
+      body.appendChild(name);
+      body.appendChild(el("span", "effect", entry.effect));
+      row.appendChild(body);
+
+      row.appendChild(
+        el(
+          "span",
+          "cost" + (maxed ? " maxed" : affordable ? " can" : ""),
+          maxed ? "max" : entry.nextCost + "g",
+        ),
+      );
+      row.title = entry.blurb;
+      host.appendChild(row);
     });
   }
 
@@ -1019,13 +1127,13 @@
       var name = (EMBED.goods && EMBED.goods[entry.good] && EMBED.goods[entry.good].name) || entry.good;
       var over = entry.yourPrice > entry.referencePrice;
       var under = entry.yourPrice < entry.referencePrice;
-      var chip = el(
-        "span",
-        "chip" + (over ? " over" : under ? " under" : ""),
-        name + " " + entry.yourPrice + "g",
-      );
+      var chip = el("span", "chip" + (over ? " over" : under ? " under" : ""));
+      if (GOOD_ICON[entry.good]) chip.appendChild(glyph(GOOD_ICON[entry.good]));
+      chip.appendChild(document.createTextNode(entry.yourPrice + "g"));
+      void name;
       chip.title =
-        "Market reference " +
+        name +
+        " — market reference " +
         entry.referencePrice +
         "g" +
         (over ? " — you are charging a premium" : under ? " — you are undercutting" : "");
@@ -1078,20 +1186,15 @@
 
     var text = document.createElement("div");
     text.appendChild(el("div", "who", customer.name));
-    text.appendChild(
-      el(
-        "div",
-        "wants",
-        customer.wants
-          .map(function (w) {
-            return w.label;
-          })
-          .join(", ") +
-          " — " +
-          customer.yourPrice +
-          "g",
-      ),
-    );
+
+    // Show the basket as glyphs plus counts — quicker to read than a sentence.
+    var wants = el("div", "wants");
+    customer.wants.forEach(function (want) {
+      if (GOOD_ICON[want.good]) wants.appendChild(glyph(GOOD_ICON[want.good]));
+      wants.appendChild(document.createTextNode(want.qty + " "));
+    });
+    wants.appendChild(document.createTextNode("· " + customer.yourPrice + "g"));
+    text.appendChild(wants);
 
     var meta = el("div", "meta", customer.patienceLeft + "m left · ");
     var blocked = !customer.canFulfill || !customer.affordable;

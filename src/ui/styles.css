@@ -145,6 +145,19 @@ body {
   font-size: 11px;
 }
 
+/* Inline sprite used as a glyph in text: HUD pills, chips, list rows. */
+.glyph {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  vertical-align: -3px;
+}
+
+.glyph.lg {
+  width: 20px;
+  height: 20px;
+}
+
 .badge {
   font-size: 11px;
   padding: 2px 8px;
@@ -395,6 +408,101 @@ body {
   min-width: 12px;
 }
 
+/* The task currently being worked, called out at the top of the queue. */
+.queue li.now {
+  background: #f4d78a;
+  color: #6b4f1f;
+}
+
+.queue li.now .n {
+  color: #96702a;
+}
+
+/* ------------------------------------------------------------ upgrades -- */
+
+.upgrade {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 0;
+  border-top: 1px solid var(--line);
+}
+
+.upgrade:first-child {
+  border-top: 0;
+}
+
+.upgrade .body {
+  min-width: 0;
+  flex: 1;
+}
+
+.upgrade .name {
+  font-weight: 650;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upgrade .effect {
+  color: var(--ink-faint);
+  font-size: 11px;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upgrade .cost {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--ink-soft);
+}
+
+/* Affordable right now — worth nudging the player toward. */
+.upgrade .cost.can {
+  background: #f4d78a;
+  color: #6b4f1f;
+  font-weight: 650;
+}
+
+.upgrade .cost.maxed {
+  background: rgba(76, 139, 82, 0.16);
+  color: var(--good);
+  font-weight: 650;
+}
+
+/* Pips showing how far an upgrade has been taken. */
+.pips {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.pip {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.pip.on {
+  background: var(--good);
+}
+
+.upgrade.owned .name {
+  color: var(--ink);
+}
+
+.upgrade.locked {
+  opacity: 0.62;
+}
+
 .queue li .what {
   font-weight: 600;
   text-transform: capitalize;
@@ -425,8 +533,11 @@ body {
 }
 
 .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
-  padding: 2px 8px;
+  padding: 2px 8px 2px 5px;
   border-radius: 999px;
   background: var(--panel-2);
   white-space: nowrap;

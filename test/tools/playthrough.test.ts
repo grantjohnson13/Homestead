@@ -26,6 +26,7 @@ describe("a full playthrough via tool calls only", () => {
       [
         "assign_tasks",
         "buy_supplies",
+        "buy_upgrade",
         "clear_task_queue",
         "get_almanac",
         "get_farm_state",

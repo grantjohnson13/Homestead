@@ -32,11 +32,16 @@ export function tickPlots(state: FarmState): void {
   }
 }
 
-/** Tops a plot's moisture up to one watering's worth. */
-export function waterPlot(plot: Plot): boolean {
+/**
+ * Tops a plot's moisture up to one watering's worth.
+ *
+ * `multiplier` carries the sprinkler upgrade: the same watering simply lasts
+ * longer, rather than the crop needing fewer of them.
+ */
+export function waterPlot(plot: Plot, multiplier = 1): boolean {
   if (!plot.crop) return false;
   const crop = CROPS[plot.crop];
-  const segment = moistureSegment(crop);
+  const segment = moistureSegment(crop) * multiplier;
   if (plot.moisture >= segment) return false; // already saturated
   plot.moisture = segment;
   return true;

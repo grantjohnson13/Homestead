@@ -23,6 +23,7 @@ import {
   patienceRemaining,
   plotProgressFraction,
   plotStage,
+  upgradeCatalogue,
   type FarmState,
   type FarmTime,
 } from "../sim/index.ts";
@@ -121,6 +122,8 @@ export interface FarmSnapshot {
   prices: { good: string; yourPrice: number; referencePrice: number }[];
   /** Recent customers who left without buying, and why. */
   lostSales: LostSaleSnapshot[];
+  /** Everything investable, with current level and the next price. */
+  upgrades: ReturnType<typeof upgradeCatalogue>;
   recentEvents: { at: number; kind: string; text: string }[];
 }
 
@@ -173,6 +176,7 @@ export function snapshot(state: FarmState): FarmSnapshot {
       yourPrice: priceOf(state, good),
       referencePrice: GOODS[good].basePrice,
     })),
+    upgrades: upgradeCatalogue(state),
     lostSales: state.lostSales.map((lost) => ({
       at: lost.at,
       customer: lost.customer,

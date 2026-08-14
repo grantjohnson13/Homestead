@@ -13,9 +13,18 @@
       <header class="hud">
         <span class="title">🌾 Homestead</span>
         <span class="badge" id="cert" style="display: none"></span>
-        <span class="stat"><span class="label">gold</span><b id="stat-gold">—</b></span>
-        <span class="stat"><span class="label">rep</span><b id="stat-rep">—</b></span>
-        <span class="stat"><b id="stat-clock">—</b></span>
+        <span class="stat"
+          ><svg class="glyph" aria-hidden="true"><use href="#ic-coin" /></svg
+          ><b id="stat-gold">—</b></span
+        >
+        <span class="stat"
+          ><svg class="glyph" aria-hidden="true"><use href="#ic-star" /></svg
+          ><b id="stat-rep">—</b></span
+        >
+        <span class="stat"
+          ><svg class="glyph" aria-hidden="true"><use href="#ic-clock" /></svg
+          ><b id="stat-clock">—</b></span
+        >
       </header>
 
       <div class="farm" id="board-mount">
@@ -45,6 +54,11 @@
         <section class="card">
           <h2>Your prices</h2>
           <div id="prices" class="chips"></div>
+        </section>
+
+        <section class="card">
+          <h2>Investments</h2>
+          <div id="upgrades"></div>
         </section>
 
         <section class="card">

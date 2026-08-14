@@ -18,6 +18,7 @@ import { CUSTOMER_SPOTS } from "../data/map.ts";
 import { CUSTOMERS, PRICING, REPUTATION } from "./constants.ts";
 import { countItem, logEvent, nextId, takeItem } from "./farm.ts";
 import { chance, pick, poissonInterval, rand, randInt } from "./rng.ts";
+import { arrivalMultiplier, patienceMinutes, willingnessBonus } from "./upgrades.ts";
 import type { Customer, CustomerWant, FarmState, LostSale, LostSaleReason } from "./types.ts";
 
 /** Linear interpolation keyed on reputation, hinged at the midpoint. */
@@ -32,18 +33,25 @@ function byReputation(reputation: number, atMin: number, atMid: number, atMax: n
   return atMid + (atMax - atMid) * t;
 }
 
-export function arrivalIntervalMean(reputation: number): number {
+/**
+ * Mean gap between arrivals. `stallBonus` carries the market-stall upgrade,
+ * which is the only thing that meaningfully raises a farm's income ceiling —
+ * customer throughput, not production, is what limits a farm.
+ */
+export function arrivalIntervalMean(reputation: number, stallBonus = 1): number {
   const scale = byReputation(reputation, CUSTOMERS.intervalAtMinRep, 1, CUSTOMERS.intervalAtMaxRep);
-  return Math.max(1, CUSTOMERS.baseIntervalMinutes * scale);
+  return Math.max(1, CUSTOMERS.baseIntervalMinutes * scale * stallBonus);
 }
 
 /** How much above the reference price the valley will bear at this reputation. */
-export function willingnessMultiplier(reputation: number): number {
-  return byReputation(
-    reputation,
-    PRICING.willingnessAtMinRep,
-    (PRICING.willingnessAtMinRep + PRICING.willingnessAtMaxRep) / 2,
-    PRICING.willingnessAtMaxRep,
+export function willingnessMultiplier(reputation: number, standBonus = 1): number {
+  return (
+    byReputation(
+      reputation,
+      PRICING.willingnessAtMinRep,
+      (PRICING.willingnessAtMinRep + PRICING.willingnessAtMaxRep) / 2,
+      PRICING.willingnessAtMaxRep,
+    ) * standBonus
   );
 }
 
@@ -143,7 +151,8 @@ export function tickCustomers(state: FarmState): void {
 
   // Reschedule regardless, so a full stand doesn't cause a backlog burst.
   state.nextCustomerAt =
-    state.clock + poissonInterval(state, arrivalIntervalMean(state.reputation));
+    state.clock +
+    poissonInterval(state, arrivalIntervalMean(state.reputation, arrivalMultiplier(state)));
 
   if (state.customers.length >= CUSTOMERS.maxWaiting) return;
 
@@ -234,7 +243,7 @@ export function spawnCustomer(state: FarmState): Customer {
     1,
     Math.round(
       reference *
-        willingnessMultiplier(state.reputation) *
+        willingnessMultiplier(state.reputation, willingnessBonus(state)) *
         profile.generosity *
         profile.flexibility *
         jitter,
@@ -253,7 +262,7 @@ export function spawnCustomer(state: FarmState): Customer {
     wants,
     maxPrice,
     arrivedAt: state.clock,
-    patience: CUSTOMERS.patienceMinutes,
+    patience: patienceMinutes(state),
     spot: { x: spot.x, y: spot.y },
   };
 }

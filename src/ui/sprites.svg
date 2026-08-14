@@ -324,6 +324,74 @@
     <path d="M15 4h5l-5 6h5" stroke="#8a94a8" stroke-width="1.6" fill="none"
           stroke-linejoin="round" />
   </symbol>
+  <!-- Goods, for the stock and price lists. -->
+  <symbol id="ic-egg" viewBox="0 0 24 24">
+    <ellipse cx="12" cy="14" rx="6" ry="7.5" fill="#fdf6e6" />
+    <ellipse cx="9.6" cy="11" rx="1.8" ry="2.6" fill="#fffdf7" opacity="0.9" />
+    <path d="M6.4 16.5a6 7.5 0 0 0 11.2 0" stroke="#eadfc6" stroke-width="1" fill="none" />
+  </symbol>
+
+  <symbol id="ic-milk" viewBox="0 0 24 24">
+    <path d="M8 8h8v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2z" fill="#fbfbfb" />
+    <path d="M8 8 9.5 4h5L16 8z" fill="#e8eef2" />
+    <rect x="8" y="13" width="8" height="4" fill="#8fc7e8" opacity="0.55" />
+    <path d="M10 5.4h4" stroke="#cfd8de" stroke-width="1.2" />
+  </symbol>
+
+  <!-- HUD glyphs. -->
+  <symbol id="ic-coin" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="8" fill="#f2c94c" />
+    <circle cx="12" cy="12" r="5.6" fill="#f7d96f" />
+    <path d="M12 8v8M10 10h3a2 2 0 0 1 0 4h-3" stroke="#c69a26" stroke-width="1.4" fill="none"
+          stroke-linecap="round" />
+  </symbol>
+
+  <symbol id="ic-star" viewBox="0 0 24 24">
+    <path d="M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8L6.7 20l1-6L3.4 9.9 9.4 9z" fill="#f2a75c" />
+  </symbol>
+
+  <symbol id="ic-clock" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="8" fill="#e8d4b0" stroke="#c9a86a" stroke-width="1.4" />
+    <path d="M12 7.5V12l3 2" stroke="#7d5236" stroke-width="1.6" fill="none" stroke-linecap="round" />
+  </symbol>
+
+  <symbol id="ic-bolt" viewBox="0 0 24 24">
+    <path d="M13 2 5 13h5l-1 9 8-11h-5z" fill="#f2c94c" />
+  </symbol>
+
+  <!-- Upgrade glyphs. -->
+  <symbol id="ic-sprinkler" viewBox="0 0 24 24">
+    <rect x="11" y="10" width="2.4" height="11" rx="1" fill="#8fa8b8" />
+    <circle cx="12" cy="9" r="2.6" fill="#7a94a4" />
+    <path d="M6 6.5q2 2 3.6 2.2M18 6.5q-2 2-3.6 2.2M12 4v2.4" stroke="#8fc7e8" stroke-width="1.5"
+          fill="none" stroke-linecap="round" />
+    <circle cx="5" cy="5.5" r="1.1" fill="#8fc7e8" />
+    <circle cx="19" cy="5.5" r="1.1" fill="#8fc7e8" />
+  </symbol>
+
+  <symbol id="ic-stall" viewBox="0 0 24 24">
+    <path d="M3 9h18l-2-5H5z" fill="#e8785f" />
+    <path d="M7 4v5M11 4v5M15 4v5" stroke="#f4e3c8" stroke-width="1.8" opacity="0.85" />
+    <rect x="4" y="9" width="16" height="3" rx="1" fill="#b8946a" />
+    <rect x="5" y="12" width="14" height="8" rx="1" fill="#d8b98c" />
+    <circle cx="9" cy="16" r="1.6" fill="#e2564b" />
+    <circle cx="14" cy="16" r="1.6" fill="#7bb85a" />
+  </symbol>
+
+  <symbol id="ic-sign" viewBox="0 0 24 24">
+    <rect x="11" y="12" width="2.4" height="9" rx="1" fill="#a37c50" />
+    <rect x="3" y="4" width="18" height="9" rx="1.5" fill="#d8b98c" stroke="#a37c50"
+          stroke-width="1.2" />
+    <path d="M6 7.5h12M6 10h8" stroke="#8a6a45" stroke-width="1.3" stroke-linecap="round" />
+  </symbol>
+
+  <symbol id="ic-awning" viewBox="0 0 24 24">
+    <path d="M2 12h20l-3-7H5z" fill="#c86b5a" />
+    <path d="M2 12q2.5 3 5 0t5 0 5 0 5 0" fill="#e8785f" />
+    <rect x="4" y="13" width="16" height="7" rx="1" fill="#e8d4b0" />
+    <path d="M9 13v7M15 13v7" stroke="#d8b98c" stroke-width="1.2" />
+  </symbol>
+
   <symbol id="ic-box" viewBox="0 0 24 24">
     <path d="M4 9h16v10H4z" fill="#c9a86a" />
     <path d="M4 9 12 4l8 5" fill="#dcc08a" />
