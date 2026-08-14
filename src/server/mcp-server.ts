@@ -7,9 +7,12 @@
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { RESOURCE_MIME_TYPE, registerAppResource } from "@modelcontextprotocol/ext-apps/server";
 import { almanacText, buildAlmanac } from "../tools/almanac.ts";
 import { registerFarmTools } from "../tools/farm-tools.ts";
+import { FARM_VIEW_URI } from "../tools/app-tool.ts";
 import type { FarmStore } from "../tools/store.ts";
+import { FARM_VIEW_HTML } from "../ui/generated/farm-view.html.ts";
 import { SERVER_INSTRUCTIONS } from "./instructions.ts";
 
 export const SERVER_INFO = {
@@ -26,10 +29,40 @@ export function createMcpServer(store: FarmStore): McpServer {
     },
   });
 
+  registerFarmView(server);
   registerAlmanacTool(server);
   registerFarmTools(server, store);
 
   return server;
+}
+
+/**
+ * The single UI resource shared by every farm tool.
+ *
+ * No `_meta.ui.csp` is declared: the resource has zero external references by
+ * construction (asserted at build time), and claude.ai does not reliably honour
+ * declared domains anyway. Self-containment is the only thing that travels.
+ */
+function registerFarmView(server: McpServer): void {
+  registerAppResource(
+    server,
+    "Farm view",
+    FARM_VIEW_URI,
+    {
+      description:
+        "A live top-down view of the farm: crops growing in their plots, Wren walking her task " +
+        "queue, animals in the coop and barn, and customers waiting at the stand.",
+    },
+    async () => ({
+      contents: [
+        {
+          uri: FARM_VIEW_URI,
+          mimeType: RESOURCE_MIME_TYPE,
+          text: FARM_VIEW_HTML,
+        },
+      ],
+    }),
+  );
 }
 
 function registerAlmanacTool(server: McpServer): void {

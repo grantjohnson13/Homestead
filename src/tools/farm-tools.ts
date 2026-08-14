@@ -29,6 +29,7 @@ import {
   type QueuedTask,
   type TaskInput,
 } from "../sim/index.ts";
+import { registerFarmViewTool } from "./app-tool.ts";
 import { buildResult, refusal, takeAwaySummary } from "./result.ts";
 import { describeFarm, mapDescription, snapshot } from "./snapshot.ts";
 import { withFarm, type FarmStore } from "./store.ts";
@@ -60,7 +61,8 @@ export function registerFarmTools(server: McpServer, store: FarmStore): void {
 /* ------------------------------------------------------------------ state -- */
 
 function registerGetFarmState(server: McpServer, store: FarmStore): void {
-  server.registerTool(
+  registerFarmViewTool(
+    server,
     "get_farm_state",
     {
       title: "Look at the farm",
@@ -89,7 +91,8 @@ function registerGetFarmState(server: McpServer, store: FarmStore): void {
 /* ------------------------------------------------------------------ tasks -- */
 
 function registerAssignTasks(server: McpServer, store: FarmStore): void {
-  server.registerTool(
+  registerFarmViewTool(
+    server,
     "assign_tasks",
     {
       title: "Give Wren a list of jobs",
@@ -179,7 +182,8 @@ function registerAssignTasks(server: McpServer, store: FarmStore): void {
 }
 
 function registerClearQueue(server: McpServer, store: FarmStore): void {
-  server.registerTool(
+  registerFarmViewTool(
+    server,
     "clear_task_queue",
     {
       title: "Clear Wren's queue",
@@ -211,7 +215,8 @@ function registerClearQueue(server: McpServer, store: FarmStore): void {
 }
 
 function registerReorderQueue(server: McpServer, store: FarmStore): void {
-  server.registerTool(
+  registerFarmViewTool(
+    server,
     "reorder_task_queue",
     {
       title: "Reorder Wren's queue",
@@ -261,7 +266,8 @@ function registerReorderQueue(server: McpServer, store: FarmStore): void {
 
 function registerBuySupplies(server: McpServer, store: FarmStore): void {
   const ids = SHOP_ITEMS.map((item) => item.id);
-  server.registerTool(
+  registerFarmViewTool(
+    server,
     "buy_supplies",
     {
       title: "Buy from the supply shop",
@@ -298,7 +304,8 @@ function registerBuySupplies(server: McpServer, store: FarmStore): void {
 }
 
 function registerListCustomers(server: McpServer, store: FarmStore): void {
-  server.registerTool(
+  registerFarmViewTool(
+    server,
     "list_waiting_customers",
     {
       title: "See who is at the stand",
@@ -331,7 +338,8 @@ function registerListCustomers(server: McpServer, store: FarmStore): void {
 }
 
 function registerSellToCustomer(server: McpServer, store: FarmStore): void {
-  server.registerTool(
+  registerFarmViewTool(
+    server,
     "sell_to_customer",
     {
       title: "Sell to a waiting customer",
@@ -427,7 +435,8 @@ function registerSellToCustomer(server: McpServer, store: FarmStore): void {
 /* ------------------------------------------------------------------- meta -- */
 
 function registerRename(server: McpServer, store: FarmStore): void {
-  server.registerTool(
+  registerFarmViewTool(
+    server,
     "rename",
     {
       title: "Rename Wren or an animal",
@@ -476,7 +485,8 @@ function registerRename(server: McpServer, store: FarmStore): void {
 }
 
 function registerNewFarm(server: McpServer, store: FarmStore): void {
-  server.registerTool(
+  registerFarmViewTool(
+    server,
     "new_farm",
     {
       title: "Start over with a fresh farm",

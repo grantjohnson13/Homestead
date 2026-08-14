@@ -215,3 +215,51 @@ making it legible rather than by removing it: `get_almanac` explains it,
 `list_waiting_customers` reports per-customer whether the stand can currently
 fill the order, and `sell_to_customer`'s error names the exact restock task to
 queue. One extra task per batch is management, not busywork.
+
+---
+
+## 2026-08-14 — M5: wiring and deployment
+
+### No `_meta.ui.csp` is declared
+
+`registerAppResource` supports declaring `csp.resourceDomains` /
+`csp.connectDomains`. We declare neither, because the farm view has no external
+references at all — a property asserted by the build script *and* by two separate
+tests. Declaring a CSP we do not need would only create the impression that
+external loads are supported, which on claude.ai they are not reliably.
+
+### Deployment could not be completed from this environment
+
+`wrangler whoami` reports no authentication, and `wrangler login` is an
+interactive browser OAuth flow against an account only the repo owner has. This
+is precisely the "deployment credentials you cannot have" blocker the brief
+anticipates.
+
+Considered and rejected: `wrangler deploy --temporary`, which deploys to an
+ephemeral Cloudflare preview account without logging in. It would have produced a
+live URL, but one the owner cannot manage, keep, or point a connector at
+long-term — and it would publish a public endpoint on an account that is not
+theirs. Verifying against a throwaway URL is worth less than leaving a clean
+one-command handoff.
+
+What *was* verified instead, and is arguably stronger than a curl against a
+deployed URL:
+
+- `wrangler deploy --dry-run` builds the real production bundle (1260 KiB raw,
+  232 KiB gzipped — comfortably inside limits) with the Durable Object binding
+  resolved.
+- The `worker` test project runs the actual Worker and Durable Object inside
+  `workerd`, the same runtime Cloudflare executes in production, and exercises
+  the MCP handshake, `tools/list`, `tools/call`, `resources/list`,
+  `resources/read`, persistence across eviction, and the alarm loop.
+
+**TODO for the human — the entire remaining deployment step:**
+
+```bash
+npx wrangler login
+npm run deploy
+curl https://<printed-url>/health     # expect {"ok": true, "service": "homestead"}
+```
+
+Then add `https://<printed-url>/mcp/<a-private-key>` to Claude as a custom
+connector. Nothing else is outstanding.

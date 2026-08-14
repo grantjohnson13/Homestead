@@ -8,7 +8,9 @@
       "tools": {
         "listChanged": true
       },
-      "resources": {}
+      "resources": {
+        "listChanged": true
+      }
     },
     "serverInfo": {
       "name": "homestead",
@@ -58,6 +60,12 @@
         },
         "execution": {
           "taskSupport": "forbidden"
+        },
+        "_meta": {
+          "ui": {
+            "resourceUri": "ui://homestead/farm-view"
+          },
+          "ui/resourceUri": "ui://homestead/farm-view"
         }
       },
       {
@@ -134,6 +142,12 @@
         },
         "execution": {
           "taskSupport": "forbidden"
+        },
+        "_meta": {
+          "ui": {
+            "resourceUri": "ui://homestead/farm-view"
+          },
+          "ui/resourceUri": "ui://homestead/farm-view"
         }
       },
       {
@@ -147,6 +161,12 @@
         },
         "execution": {
           "taskSupport": "forbidden"
+        },
+        "_meta": {
+          "ui": {
+            "resourceUri": "ui://homestead/farm-view"
+          },
+          "ui/resourceUri": "ui://homestead/farm-view"
         }
       },
       {
@@ -173,6 +193,12 @@
         },
         "execution": {
           "taskSupport": "forbidden"
+        },
+        "_meta": {
+          "ui": {
+            "resourceUri": "ui://homestead/farm-view"
+          },
+          "ui/resourceUri": "ui://homestead/farm-view"
         }
       },
       {
@@ -201,6 +227,12 @@
         },
         "execution": {
           "taskSupport": "forbidden"
+        },
+        "_meta": {
+          "ui": {
+            "resourceUri": "ui://homestead/farm-view"
+          },
+          "ui/resourceUri": "ui://homestead/farm-view"
         }
       },
       {
@@ -218,6 +250,12 @@
         },
         "execution": {
           "taskSupport": "forbidden"
+        },
+        "_meta": {
+          "ui": {
+            "resourceUri": "ui://homestead/farm-view"
+          },
+          "ui/resourceUri": "ui://homestead/farm-view"
         }
       },
       {
@@ -249,6 +287,12 @@
         },
         "execution": {
           "taskSupport": "forbidden"
+        },
+        "_meta": {
+          "ui": {
+            "resourceUri": "ui://homestead/farm-view"
+          },
+          "ui/resourceUri": "ui://homestead/farm-view"
         }
       },
       {
@@ -278,6 +322,12 @@
         },
         "execution": {
           "taskSupport": "forbidden"
+        },
+        "_meta": {
+          "ui": {
+            "resourceUri": "ui://homestead/farm-view"
+          },
+          "ui/resourceUri": "ui://homestead/farm-view"
         }
       },
       {
@@ -311,6 +361,12 @@
         },
         "execution": {
           "taskSupport": "forbidden"
+        },
+        "_meta": {
+          "ui": {
+            "resourceUri": "ui://homestead/farm-view"
+          },
+          "ui/resourceUri": "ui://homestead/farm-view"
         }
       }
     ]
