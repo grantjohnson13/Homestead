@@ -388,8 +388,10 @@ function registerStandingOrders(server: McpServer, store: FarmStore): void {
     {
       title: "Let Wren run the farm",
       description:
-        "Puts Wren on standing orders so she runs the day-to-day herself and the player is left " +
-        "with the decisions worth making: what to grow, what to charge, what to invest in.\n\n" +
+        "Adjusts Wren's standing orders. **These are ON for every new farm** — she already runs " +
+        "the day-to-day herself, leaving the player the decisions worth making: what to grow, " +
+        "what to charge, what to invest in. Use this to change what she plants, tighten her " +
+        "spending, or hand full manual control back.\n\n" +
         "Whenever her queue runs dry she plans her own next few jobs, in this order: harvest " +
         "anything ripe, collect eggs and milk, restock the stand, feed hungry animals, water " +
         "stalled crops, sow empty beds, till new ground, and make a fuss of any grumpy animal.\n\n" +

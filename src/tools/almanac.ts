@@ -76,6 +76,8 @@ export const MECHANICS = {
     "Watering is a Wren task. She walks to the well only if she is out of water; assume watering a plot costs a couple of minutes.",
   animals: `Animals produce only while fed. Feeding costs feed from your inventory and lasts ${ANIMALS.chicken.feedLastsMinutes} game-minutes. Unfed animals stop producing and their mood slides: ${MOOD_BANDS.map((b) => b.mood).join(" -> ")}. A grumpy animal sometimes skips a production cycle entirely. Feeding and petting restore mood. Animals never die.`,
   wren: `Wren works one task at a time from a FIFO queue, walking there first. She has ${STAMINA.max} stamina; tasks drain it and she recovers by idling at the farmhouse. Below ${STAMINA.refuseBelow} she refuses new work until she has rested back to ${STAMINA.resumeAt}.`,
+  standingOrders:
+    "By default Wren runs the farm herself: whenever her queue is empty she plans her own next jobs — harvest, collect, restock, feed and cheer the animals, water anything stalled, sow empty beds, then break new ground. Tasks you assign always come first. set_standing_orders changes what she sows, whether she may spend, and the gold reserve she will never dip below.",
   selling:
     "Customers buy from the FARM STAND, not from barn storage. Harvested goods land in the barn, so queue a 'restock' task to carry them out front. Nobody needs to be standing at the counter: the stand sells itself.",
   pricing:

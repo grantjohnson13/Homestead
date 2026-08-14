@@ -21,8 +21,16 @@ import { countItem } from "./farm.ts";
 import { isFed } from "./livestock.ts";
 import type { FarmState, StandingOrders, TaskInput } from "./types.ts";
 
+/**
+ * On by default.
+ *
+ * A farm where the farmhand stands still until told otherwise is not a game
+ * about running a farm, it is a game about remembering to water things. Every
+ * new farm starts with Wren working; the player's first decisions are what to
+ * grow and what to charge, which are the interesting ones.
+ */
 export const DEFAULT_ORDERS: StandingOrders = {
-  enabled: false,
+  enabled: true,
   plant: "auto",
   buySupplies: true,
   reserve: 200,

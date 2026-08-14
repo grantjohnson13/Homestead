@@ -2,10 +2,19 @@ import { createFarm, validateBatch, type FarmState, type TaskInput } from "../..
 
 let idCounter = 0;
 
-/** A fresh farm with a fixed seed, so every test is reproducible. */
+/**
+ * A fresh farm with a fixed seed, so every test is reproducible.
+ *
+ * Standing orders are switched off here even though they are on for real farms:
+ * a test that asserts "an unwatered crop does not grow" needs a farmhand who
+ * will not helpfully go and water it. Tests that want the autonomous behaviour
+ * ask for it explicitly (see orders.test.ts).
+ */
 export function makeFarm(seed = 1234): FarmState {
   idCounter = 0;
-  return createFarm(seed, 0);
+  const farm = createFarm(seed, 0);
+  farm.standingOrders.enabled = false;
+  return farm;
 }
 
 /** Validates and enqueues tasks the way assign_tasks does. Returns the verdicts. */

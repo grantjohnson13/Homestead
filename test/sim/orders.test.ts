@@ -24,9 +24,14 @@ function autonomous(seed = 1, overrides: Partial<FarmState["standingOrders"]> = 
 }
 
 describe("standing orders: staying out of the way", () => {
+  it("is on for a brand-new farm", () => {
+    // Every player gets a working farmhand; nobody has to discover a setting.
+    expect(createFarm(1, 0).standingOrders.enabled).toBe(true);
+  });
+
   it("does nothing at all while switched off", () => {
     const farm = makeFarm();
-    expect(farm.standingOrders.enabled).toBe(false);
+    farm.standingOrders.enabled = false;
 
     advance(farm, 300);
     expect(farm.wren.queue).toHaveLength(0);

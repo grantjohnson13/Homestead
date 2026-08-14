@@ -42,6 +42,15 @@ describe("a full playthrough via tool calls only", () => {
     );
   });
 
+  it("lets the player take the wheel from Wren", async () => {
+    // Standing orders are on for every new farm, so this playthrough — which is
+    // a test that the tool surface alone is enough to play — switches them off
+    // and does everything by hand.
+    const response = record("manual", await game.call("set_standing_orders", { enabled: false }));
+    expect(response.isError).toBe(false);
+    expect(response.state.standingOrders.enabled).toBe(false);
+  });
+
   it("starts on a fresh farm with 500 gold", async () => {
     const response = record("look", await game.call("get_farm_state"));
     expect(response.state.gold).toBe(500);

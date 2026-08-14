@@ -73,6 +73,9 @@ export function play(
   options: PlayOptions = {},
 ): PlayResult {
   const farm = createFarm(seed, 0);
+  // These profiles ARE the policy under test; an autonomous Wren working
+  // alongside them would confound what each strategy is actually worth.
+  farm.standingOrders.enabled = false;
   const ctx = makeContext(farm);
   const startGold = farm.gold;
 

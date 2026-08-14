@@ -9,11 +9,15 @@ say _"show me my farm"_, and from then on you run the place by conversation:
 > **Claude:** _(calls `assign_tasks`)_ Wren's on it — she's heading out to plot 1
 > now. The farm view below updates as she works.
 
-On the farm lives **Wren**, your farmhand. You don't drive her directly; you give
-her a task queue and she walks around working through it in real time. Customers
-turn up at the farm stand wanting produce, and you decide whether to take their
-offer or haggle. Crops grow, animals get hungry, and the world keeps ticking
-between your messages.
+On the farm lives **Wren**, your farmhand, and she runs the place herself:
+harvesting, watering, feeding the animals and carrying goods out to the stand
+without being asked. You're the owner, not the labourer — you decide what to
+grow, what to charge, and what to invest in. You can still direct her whenever
+you like; anything you assign takes priority over her own plans.
+
+Customers arrive at the stand with a private idea of what they'll pay and buy on
+their own if your price is right. Crops grow, animals get hungry, and the world
+keeps ticking between your messages.
 
 Every meaningful tool call renders a **live top-down view of the farm** inline in
 the conversation — Wren walking to a plot, watering it, carrying crates to the
