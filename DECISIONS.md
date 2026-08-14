@@ -332,6 +332,42 @@ each with a distinct shape: the expander invests through a long dry start and
 overtakes late; the animal farm compounds reputation fastest; the cautious farm
 is never in danger. That is the spread the milestone asked for.
 
+### Playtesting found what the balance tests could not
+
+Two problems surfaced the moment a human played the game in a browser, neither
+of which any automated test could have caught.
+
+**Customer patience was unplayable.** The brief specifies ~10 game-minutes of
+patience and arrivals every ~8, which at one real second per game-minute means a
+customer appears and leaves within **ten real seconds**. A player cannot read the
+message, decide a price, and possibly send Wren to restock in that window, so
+every customer timed out at −2 reputation and the game was quietly unwinnable.
+
+The balance tests missed it completely because the scripted players served
+customers programmatically in the same tick they arrived — patience never bit.
+The lesson generalises: any quantity measured against _human_ response time
+cannot be validated by a simulation that responds instantly.
+
+Patience is now 150 game-minutes (~2.5 real minutes: a conversational turn plus
+a barn-to-stand restock trip) and arrivals are spaced to ~50 game-minutes, so
+roughly one new customer appears per turn instead of four. `test/sim/clock.test.ts`
+asserts these in _real seconds_ so the constraint is explicit rather than
+incidental.
+
+Fewer visitors meant thinner income, so basket sizes grew to match — a rarer
+customer buys a proper basket. Quantities are still clamped to what the farm can
+supply, so early baskets stay small and grow as the barn fills.
+
+Result: timeouts went from 5–10 per run to **zero**, reputation now climbs
+(76/61/93 at 600 minutes instead of 66/54/96 with constant attrition), and all
+three strategies remain profitable inside a factor of 1.2.
+
+**The clock read as a broken stopwatch.** The header showed raw elapsed time
+(`4h 37m`) climbing every second. The pace is deliberate and stayed unchanged;
+only the presentation moved to a farm day-clock (`Day 2 · 07:15`), computed
+server-side in `sim/clock.ts` so the UI and the text fallback cannot disagree.
+Farms start at 6am.
+
 ### The brief's 30-game-minute horizon is too short to measure
 
 Thirty game-minutes is barely one radish cycle plus walking, and no strategy has

@@ -74,4 +74,11 @@ export {
 } from "./tasks.ts";
 export { buySupplies, quote, type PurchaseOutcome } from "./economy.ts";
 export { findPath, manhattan, facingFor } from "./pathfind.ts";
+export {
+  farmTime,
+  DAY_START_HOUR,
+  MINUTES_PER_DAY,
+  MINUTES_PER_HOUR,
+  type FarmTime,
+} from "./clock.ts";
 export { rand, randInt, chance, pick, poissonInterval, makeSeed } from "./rng.ts";

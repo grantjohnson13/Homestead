@@ -11,6 +11,7 @@ import { CROPS } from "../data/crops.ts";
 import { GOODS, describeGood, type GoodId } from "../data/items.ts";
 import { MAP_ART, MAP_HEIGHT, MAP_WIDTH } from "../data/map.ts";
 import {
+  farmTime,
   fulfillment,
   isHarvestable,
   minutesToProduce,
@@ -20,6 +21,7 @@ import {
   plotProgressFraction,
   plotStage,
   type FarmState,
+  type FarmTime,
 } from "../sim/index.ts";
 
 export interface PlotSnapshot {
@@ -81,7 +83,10 @@ export interface WrenSnapshot {
 }
 
 export interface FarmSnapshot {
+  /** Raw game-minutes since the farm was created. */
   clock: number;
+  /** The same instant as a farm day-clock, for anything player-facing. */
+  time: FarmTime;
   gold: number;
   reputation: number;
   certificates: string[];
@@ -98,6 +103,7 @@ export interface FarmSnapshot {
 export function snapshot(state: FarmState): FarmSnapshot {
   return {
     clock: Math.floor(state.clock),
+    time: farmTime(state.clock),
     gold: state.gold,
     reputation: Math.round(state.reputation),
     certificates: [...state.certificates],
@@ -222,7 +228,7 @@ export function mapDescription() {
 export function describeFarm(snap: FarmSnapshot): string {
   const lines: string[] = [];
   lines.push(
-    `Day clock ${snap.clock}m | ${snap.gold}g | reputation ${snap.reputation}/100${snap.paused ? " | (world was paused)" : ""}`,
+    `${snap.time.label} (${snap.time.partOfDay}) | ${snap.gold}g | reputation ${snap.reputation}/100${snap.paused ? " | (world was paused)" : ""}`,
   );
 
   const wren = snap.wren;

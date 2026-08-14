@@ -11,6 +11,7 @@
  * access and owns the simulation.
  */
 
+import { devHostPage } from "./dev-host.ts";
 import { normalizeFarmKey, type Env } from "./env.ts";
 import { landingPage } from "./landing.ts";
 
@@ -34,6 +35,14 @@ export default {
       const stub = env.FARM.get(id);
       const response = await stub.fetch(request);
       return withCors(response);
+    }
+
+    // Local dev host: lets the farm view run in a plain browser, outside Claude.
+    if (url.pathname === "/dev" || url.pathname === "/dev/") {
+      const farmKey = normalizeFarmKey(url.searchParams.get("farm"));
+      return new Response(devHostPage(farmKey), {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
     }
 
     if (url.pathname === "/" || url.pathname === "/index.html") {

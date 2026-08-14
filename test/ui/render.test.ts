@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { MAP_HEIGHT, MAP_WIDTH } from "../../src/data/map.ts";
+import { farmTime } from "../../src/sim/index.ts";
 import { MockHost } from "./host.ts";
 import { fixtureState } from "./fixture.ts";
 import type { FarmSnapshot } from "../../src/tools/snapshot.ts";
@@ -375,11 +376,13 @@ describe("the side panel and ticker", () => {
     state.gold = 777;
     state.reputation = 61;
     state.clock = 125;
+    state.time = farmTime(125);
     const h = await mount(state);
 
     expect(h.document.getElementById("stat-gold")?.textContent).toBe("777");
     expect(h.document.getElementById("stat-rep")?.textContent).toBe("61");
-    expect(h.document.getElementById("stat-clock")?.textContent).toBe("2h 05m");
+    // Farms start at 6am, so 125 minutes in is a little after eight.
+    expect(h.document.getElementById("stat-clock")?.textContent).toBe("Day 1 · 08:05");
   });
 
   it("shows the certificate once it is earned", async () => {

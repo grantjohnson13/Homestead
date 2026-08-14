@@ -53,16 +53,30 @@ export const TASK_WORK_TICKS = {
 /** Wren walks one tile per tick. */
 export const TICKS_PER_TILE = 1;
 
-/** Customer arrivals and patience. */
+/**
+ * Customer arrivals and patience.
+ *
+ * These are the one set of numbers that cannot be tuned against simulated time
+ * alone, because the clock on the other side of them is a human reading a
+ * message and typing a reply. At one real second per game-minute, the brief's
+ * ~10-minute patience gave a player ten real seconds to notice a customer,
+ * decide a price, and possibly send Wren to restock the stand — so every
+ * customer timed out and reputation only ever fell. Playtesting caught what the
+ * balance tests could not: they served customers programmatically in the same
+ * tick, so patience never bit.
+ *
+ * Patience now covers a conversational turn plus a restock trip; arrivals are
+ * spaced so roughly one new customer appears per turn rather than four.
+ */
 export const CUSTOMERS = {
-  /** Mean game-minutes between arrivals at reputation 50. */
-  baseIntervalMinutes: 8,
+  /** Mean game-minutes between arrivals at reputation 50 (~50 real seconds). */
+  baseIntervalMinutes: 50,
   /** At reputation 100 arrivals are this multiple as frequent (lower = faster). */
   intervalAtMaxRep: 0.6,
   /** At reputation 0 arrivals are this multiple as frequent. */
   intervalAtMinRep: 1.8,
-  /** Game-minutes a customer waits before leaving. */
-  patienceMinutes: 10,
+  /** Game-minutes a customer waits before leaving (~2.5 real minutes). */
+  patienceMinutes: 150,
   /** Most customers waiting at once. */
   maxWaiting: 4,
 } as const;

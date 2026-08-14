@@ -133,11 +133,18 @@ export const CUSTOMER_PROFILES: readonly CustomerProfile[] = [
 
 export const CUSTOMER_PORTRAIT_COUNT = CUSTOMER_PROFILES.length;
 
-/** How many distinct goods, and how many units, each basket size asks for. */
+/**
+ * How many distinct goods, and how many units, each basket size asks for.
+ *
+ * Sized against the arrival rate: customers come roughly once a conversational
+ * turn, so each visit has to be worth the trip. Quantities are still clamped to
+ * what the farm can actually supply, which keeps early baskets naturally small
+ * and lets them grow as the barn fills.
+ */
 export const BASKET_SHAPES = {
-  small: { lines: [1, 1], perLine: [1, 2] },
-  medium: { lines: [1, 2], perLine: [1, 3] },
-  large: { lines: [2, 3], perLine: [2, 4] },
+  small: { lines: [1, 2], perLine: [2, 3] },
+  medium: { lines: [2, 3], perLine: [2, 4] },
+  large: { lines: [2, 3], perLine: [4, 6] },
 } as const satisfies Record<
   CustomerProfile["basketSize"],
   { lines: readonly [number, number]; perLine: readonly [number, number] }

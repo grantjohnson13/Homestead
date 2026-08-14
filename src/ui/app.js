@@ -830,18 +830,13 @@
   function renderHud() {
     setText("stat-gold", farm.gold);
     setText("stat-rep", farm.reputation);
-    setText("stat-clock", formatClock(farm.clock));
+    // The server computes the day-clock so this and the text fallback agree.
+    setText("stat-clock", farm.time ? farm.time.label : "—");
 
     var cert = document.getElementById("cert");
     var earned = farm.certificates && farm.certificates.length > 0;
     cert.style.display = earned ? "" : "none";
     if (earned) cert.textContent = "Best Farm in the Valley";
-  }
-
-  function formatClock(minutes) {
-    var h = Math.floor(minutes / 60);
-    var m = minutes % 60;
-    return h + "h " + (m < 10 ? "0" : "") + m + "m";
   }
 
   function renderSide() {
