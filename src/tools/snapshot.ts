@@ -137,6 +137,8 @@ export interface FarmSnapshot {
   lostSales: LostSaleSnapshot[];
   /** Everything investable, with current level and the next price. */
   upgrades: ReturnType<typeof upgradeCatalogue>;
+  /** What Wren does on her own when nothing is queued. */
+  standingOrders: FarmState["standingOrders"];
   recentEvents: { at: number; kind: string; text: string }[];
 }
 
@@ -192,6 +194,7 @@ export function snapshot(state: FarmState): FarmSnapshot {
     })),
     standStatus: standStatus(state),
     upgrades: upgradeCatalogue(state),
+    standingOrders: { ...state.standingOrders },
     lostSales: state.lostSales.map((lost) => ({
       at: lost.at,
       customer: lost.customer,
@@ -326,8 +329,13 @@ export function describeFarm(snap: FarmSnapshot): string {
   const doing = wren.currentTask
     ? `${wren.currentTask.action} ${wren.currentTask.target ?? ""}`.trim()
     : "idle";
+  const orders = snap.standingOrders;
   lines.push(
-    `${wren.name}: ${doing}, stamina ${wren.stamina}/100${wren.exhausted ? " (worn out)" : ""}, ${wren.queue.length} task(s) queued`,
+    `${wren.name}: ${doing}, stamina ${wren.stamina}/100${wren.exhausted ? " (worn out)" : ""}, ` +
+      `${wren.queue.length} task(s) queued` +
+      (orders?.enabled
+        ? ` — running the farm herself (planting ${orders.plant}, reserve ${orders.reserve}g)`
+        : " — waiting to be told what to do"),
   );
 
   const growing = snap.plots.filter((p) => p.status === "growing");

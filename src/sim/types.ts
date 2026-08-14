@@ -23,6 +23,33 @@ export type TaskType =
  *   - "all_chickens" | "all_cows" | "all_animals"  for feed / pet / collect
  *   - a good id ("egg", "tomato") or "all"         for restock
  */
+/**
+ * What Wren does with herself when you have not told her anything.
+ *
+ * The player's job is meant to be strategy — what to grow, what to charge, what
+ * to invest in — not deciding which bed needs water this minute.
+ */
+export interface StandingOrders {
+  /** When off, Wren does nothing unless told. */
+  enabled: boolean;
+  /** A crop id, "auto" to plant for best return, or "none" to stop sowing. */
+  plant: CropId | "auto" | "none";
+  /** Whether she may spend gold on seed and feed to keep going. */
+  buySupplies: boolean;
+  /** Gold she will never spend below, so investments stay your call. */
+  reserve: number;
+  /** Whether to keep carrying goods out to the stand. */
+  keepStandStocked: boolean;
+}
+
+/** A task as described by a caller, before validation. */
+export interface TaskInput {
+  type: string;
+  target?: string;
+  crop?: string;
+  qty?: number;
+}
+
 export interface QueuedTask {
   id: string;
   type: TaskType;
@@ -214,6 +241,8 @@ export interface FarmState {
   lostSales: LostSale[];
   /** Investments made, by upgrade id, as a level (absent or 0 = not bought). */
   upgrades: Record<string, number>;
+  /** What Wren does on her own initiative when her queue runs dry. */
+  standingOrders: StandingOrders;
 
   plots: Plot[];
   animals: Animal[];

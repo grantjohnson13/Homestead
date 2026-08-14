@@ -86,6 +86,13 @@ export {
 } from "./tasks.ts";
 export { buySupplies, quote, type PurchaseOutcome } from "./economy.ts";
 export {
+  planStandingOrders,
+  chooseCrop,
+  goldPerMinute,
+  CROPS_BY_RETURN,
+  DEFAULT_ORDERS,
+} from "./orders.ts";
+export {
   buyUpgrade,
   upgradeCatalogue,
   levelOf,

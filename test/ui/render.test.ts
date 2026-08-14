@@ -649,6 +649,24 @@ describe("the side panel and ticker", () => {
     expect(Array.from(pips).every((p) => p.className.includes("on"))).toBe(true);
   });
 
+  it("says whether Wren is running the farm herself", async () => {
+    const idle = fixtureState();
+    idle.standingOrders = { ...idle.standingOrders, enabled: false };
+    const waiting = await mount(idle);
+    expect(waiting.document.getElementById("wren-mode")?.textContent).toContain("awaiting");
+    expect(waiting.document.getElementById("wren-mode")?.className).not.toContain("auto");
+    waiting.close();
+    host = null;
+
+    const auto = fixtureState();
+    auto.standingOrders = { ...auto.standingOrders, enabled: true, plant: "auto", reserve: 200 };
+    const running = await mount(auto);
+    const badge = running.document.getElementById("wren-mode");
+    expect(badge?.textContent).toContain("running the farm");
+    expect(badge?.className).toContain("auto");
+    expect(badge?.getAttribute("title")).toContain("200g");
+  });
+
   it("says why the road is quiet when there is nothing to sell", async () => {
     const state = fixtureState();
     state.customers = [];

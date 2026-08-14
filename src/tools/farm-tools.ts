@@ -9,7 +9,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { CROP_IDS } from "../data/crops.ts";
+import { CROP_IDS, isCropId } from "../data/crops.ts";
 import { GOOD_IDS, describeGood } from "../data/items.ts";
 import { PLOT_IDS } from "../data/map.ts";
 import { SHOP_ITEMS } from "../data/shop.ts";
@@ -63,6 +63,7 @@ export function registerFarmTools(server: McpServer, store: FarmStore): void {
   registerSetPrices(server, store);
   registerBuyUpgrade(server, store);
   registerSetSpeed(server, store);
+  registerStandingOrders(server, store);
   registerListCustomers(server, store);
   registerSellToCustomer(server, store);
   registerRename(server, store);
@@ -375,6 +376,90 @@ function registerSetPrices(server: McpServer, store: FarmStore): void {
         eventCursor,
         awaySummary: takeAwaySummary(state),
         extra: { changes: result.changes, insights: pricingInsights(state) },
+      });
+    },
+  );
+}
+
+function registerStandingOrders(server: McpServer, store: FarmStore): void {
+  registerFarmViewTool(
+    server,
+    "set_standing_orders",
+    {
+      title: "Let Wren run the farm",
+      description:
+        "Puts Wren on standing orders so she runs the day-to-day herself and the player is left " +
+        "with the decisions worth making: what to grow, what to charge, what to invest in.\n\n" +
+        "Whenever her queue runs dry she plans her own next few jobs, in this order: harvest " +
+        "anything ripe, collect eggs and milk, restock the stand, feed hungry animals, water " +
+        "stalled crops, sow empty beds, till new ground, and make a fuss of any grumpy animal.\n\n" +
+        "Anything you assign with assign_tasks still comes first — standing orders only fill idle " +
+        "time, so you can always take the wheel for a specific job.\n\n" +
+        '`plant` picks what she sows: a crop name, "auto" to plant for the best return she can ' +
+        'afford, or "none" to stop sowing. `buySupplies` lets her spend on seed and feed, and ' +
+        "`reserve` is the gold she will never spend below — so the money for an upgrade stays " +
+        "yours to commit.\n\n" +
+        "Turn this on when the player says they want Wren to handle things, and mention that " +
+        "they can still direct her whenever they like.",
+      inputSchema: {
+        enabled: z.boolean().optional().describe("Whether Wren works on her own initiative."),
+        plant: z
+          .string()
+          .optional()
+          .describe(`A crop (${CROP_IDS.join(", ")}), "auto" for best return, or "none".`),
+        buySupplies: z
+          .boolean()
+          .optional()
+          .describe("Whether she may buy seed and feed to keep the farm going."),
+        reserve: z
+          .number()
+          .min(0)
+          .optional()
+          .describe("Gold she will never spend below. Protects your investment budget."),
+        keepStandStocked: z
+          .boolean()
+          .optional()
+          .describe("Whether she keeps carrying goods out to the stand."),
+      },
+    },
+    async (args) => {
+      const { state, result, eventCursor } = await withFarm(store, (farm) => {
+        const orders = farm.standingOrders;
+
+        if (args.plant !== undefined) {
+          const plant = String(args.plant).toLowerCase();
+          if (plant !== "auto" && plant !== "none" && !isCropId(plant)) {
+            return {
+              ok: false as const,
+              reason: `"${args.plant}" is not a crop. Use one of ${CROP_IDS.join(", ")}, or "auto"/"none".`,
+            };
+          }
+          orders.plant = plant as typeof orders.plant;
+        }
+
+        if (args.enabled !== undefined) orders.enabled = args.enabled;
+        if (args.buySupplies !== undefined) orders.buySupplies = args.buySupplies;
+        if (args.reserve !== undefined) orders.reserve = Math.max(0, Math.round(args.reserve));
+        if (args.keepStandStocked !== undefined) orders.keepStandStocked = args.keepStandStocked;
+
+        return { ok: true as const, orders: { ...orders } };
+      });
+
+      if (!result.ok) return refusal(result.reason, { state: snapshot(state) });
+
+      const orders = result.orders;
+      const summary = orders.enabled
+        ? `${state.wren.name} is running the farm herself — planting ${orders.plant}, ` +
+          `${orders.buySupplies ? `buying supplies but never below ${orders.reserve}g` : "spending nothing"}` +
+          `, ${orders.keepStandStocked ? "and keeping the stand stocked" : "and leaving the stand to you"}.`
+        : `${state.wren.name} will wait to be told what to do.`;
+
+      return buildResult(state, {
+        summary,
+        eventCursor,
+        wrenLine: orders.enabled ? wrenLine(state, "assigned") : undefined,
+        awaySummary: takeAwaySummary(state),
+        extra: { standingOrders: orders },
       });
     },
   );

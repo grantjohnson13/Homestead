@@ -13,6 +13,7 @@ import {
   STAMINA,
   STARTING,
 } from "./constants.ts";
+import { DEFAULT_ORDERS } from "./orders.ts";
 import { poissonInterval } from "./rng.ts";
 import { housingFor } from "./upgrades.ts";
 import {
@@ -46,6 +47,7 @@ export function createFarm(seed: number, nowMs: number): FarmState {
     prices: Object.fromEntries(GOOD_IDS.map((id) => [id, GOODS[id].basePrice])),
     lostSales: [],
     upgrades: {},
+    standingOrders: { ...DEFAULT_ORDERS },
 
     plots: PLOT_TILES.map((tile) => ({
       id: tile.plotId as string,

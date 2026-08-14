@@ -13,12 +13,13 @@ import { WREN_HOME, type Point } from "../data/map.ts";
 import { WREN_LINES, type WrenContext } from "../data/wren-lines.ts";
 import { STAMINA } from "./constants.ts";
 import { harvestPlot, isHarvestable, waterPlot } from "./crops.ts";
-import { addItem, countItem, findPlot, logEvent, takeItem } from "./farm.ts";
+import { addItem, countItem, findPlot, logEvent, nextId, takeItem } from "./farm.ts";
+import { planStandingOrders } from "./orders.ts";
 import { carryCapacity, moistureMultiplier, waterCanCapacity } from "./upgrades.ts";
 import { feedAnimal, petAnimal } from "./livestock.ts";
 import { findPath, facingFor } from "./pathfind.ts";
 import { pick, randInt } from "./rng.ts";
-import { animalsForLeg, compileLegs, goodsForRestock } from "./tasks.ts";
+import { animalsForLeg, compileLegs, goodsForRestock, validateBatch } from "./tasks.ts";
 import type { ActiveTask, FarmState, Leg, QueuedTask } from "./types.ts";
 
 /** How many units Wren can carry to the stand in one trip. */
@@ -36,6 +37,12 @@ export function tickWren(state: FarmState): void {
     logEvent(state, "wren", `${wren.name} is rested and ready for work again.`);
   }
 
+  // Standing orders only ever fill idle time: anything assigned by hand is
+  // already in the queue and takes precedence.
+  if (!wren.current && !wren.exhausted && wren.queue.length === 0) {
+    enqueueStandingOrders(state);
+  }
+
   if (!wren.current && !wren.exhausted && wren.queue.length > 0) {
     startNextTask(state);
   }
@@ -44,6 +51,22 @@ export function tickWren(state: FarmState): void {
     advanceTask(state);
   } else {
     idleTick(state);
+  }
+}
+
+/**
+ * Fills an empty queue from the farm's standing orders.
+ *
+ * Validated through exactly the same path as a hand-assigned batch, so Wren
+ * cannot give herself a job the rules would refuse a player.
+ */
+function enqueueStandingOrders(state: FarmState): void {
+  const planned = planStandingOrders(state);
+  if (planned.length === 0) return;
+
+  const verdicts = validateBatch(state, planned, () => nextId(state, "task"));
+  for (const verdict of verdicts) {
+    if (verdict.accepted && verdict.task) state.wren.queue.push(verdict.task);
   }
 }
 

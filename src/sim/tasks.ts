@@ -16,7 +16,7 @@ import { FEED_ITEM_ID, cropForSeedId, isGoodId, seedIdFor, type GoodId } from ".
 import { ANCHORS, PLOT_IDS, WREN_HOME, plotTile } from "../data/map.ts";
 import { TASK_WORK_TICKS } from "./constants.ts";
 import { countItem } from "./farm.ts";
-import type { FarmState, Leg, QueuedTask, TaskType } from "./types.ts";
+import type { FarmState, Leg, QueuedTask, TaskInput, TaskType } from "./types.ts";
 
 export const TASK_TYPES: readonly TaskType[] = [
   "till",
@@ -49,12 +49,7 @@ export function kindsForTarget(target: string): AnimalKind[] {
 
 /* ------------------------------------------------------------ validation -- */
 
-export interface TaskInput {
-  type: string;
-  target?: string;
-  crop?: string;
-  qty?: number;
-}
+export type { TaskInput };
 
 export interface TaskVerdict {
   index: number;

@@ -438,6 +438,25 @@ button.stat.speed.fast .glyph {
   font-weight: 650;
 }
 
+/* Whether Wren is working to her own orders or waiting to be told. */
+.mode {
+  display: inline-block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--ink-faint);
+  margin-bottom: 5px;
+}
+
+.mode.auto {
+  background: rgba(76, 139, 82, 0.18);
+  color: var(--good);
+}
+
 .doing {
   color: var(--ink-soft);
   font-size: 12px;

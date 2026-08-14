@@ -70,6 +70,9 @@ export function migrate(state: FarmState): FarmState {
   if (!Array.isArray(state.lostSales)) state.lostSales = [];
   if (!state.upgrades || typeof state.upgrades !== "object") state.upgrades = {};
   if (typeof state.speed !== "number" || state.speed <= 0) state.speed = fallback.speed;
+  if (!state.standingOrders || typeof state.standingOrders !== "object") {
+    state.standingOrders = { ...fallback.standingOrders };
+  }
   if (!Array.isArray(state.events)) state.events = [];
   if (typeof state.eventsLogged !== "number") state.eventsLogged = state.events.length;
   // The away budget used to be counted in game-minutes; it is real ms now.

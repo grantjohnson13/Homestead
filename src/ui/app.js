@@ -917,6 +917,23 @@
     bar.className = "bar" + (wren.stamina < 25 ? " low" : wren.stamina < 55 ? " mid" : "");
     bar.firstElementChild.style.width = Math.max(0, Math.min(100, wren.stamina)) + "%";
 
+    // Say whether she is working to her own orders, so an idle-looking farmhand
+    // is not mistaken for a stuck one.
+    var orders = farm.standingOrders;
+    var badge = document.getElementById("wren-mode");
+    if (badge) {
+      badge.textContent = orders && orders.enabled ? "running the farm" : "awaiting orders";
+      badge.className = "mode" + (orders && orders.enabled ? " auto" : "");
+      badge.title =
+        orders && orders.enabled
+          ? "Wren plans her own work when the queue is empty. Planting: " +
+            orders.plant +
+            ". Reserve: " +
+            orders.reserve +
+            "g."
+          : "Wren only does what you assign.";
+    }
+
     var doing = document.getElementById("wren-doing");
     if (wren.exhausted) {
       doing.textContent = "Worn out — resting before the next job.";
