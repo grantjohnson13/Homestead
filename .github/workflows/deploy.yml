@@ -1,0 +1,102 @@
+name: CI & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# One deploy at a time. Queued runs wait rather than racing each other onto the
+# same Worker; a superseded run is not cancelled, so main never lands half-shipped.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: Typecheck, lint & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      # Also builds the farm view, which `tsc` needs to resolve the generated
+      # UI module.
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Runs the sim, the tools, the farm view in jsdom, and the real Worker
+      # and Durable Object inside workerd.
+      - name: Test
+        run: npm test
+
+  deploy:
+    name: Deploy to Cloudflare
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # `npm run deploy` builds the farm view, then runs `wrangler deploy`.
+      # Wrangler prints the live URL, which the smoke test below needs.
+      - name: Deploy Worker
+        id: deploy
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npm run deploy 2>&1 | tee deploy.log
+          url="$(grep -oE 'https://[a-zA-Z0-9._-]+\.workers\.dev' deploy.log | head -n1)"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      # A green check should mean "it is serving", not "the upload succeeded".
+      # A fresh deploy can take a moment to propagate, hence the retries.
+      - name: Smoke test /health
+        shell: bash
+        run: |
+          url="${{ vars.WORKER_URL || steps.deploy.outputs.url }}"
+          if [ -z "$url" ]; then
+            echo "::error::Could not determine the deployed URL. Set a WORKER_URL repository variable to pin it."
+            exit 1
+          fi
+
+          echo "Probing $url/health"
+          for attempt in 1 2 3 4 5; do
+            body="$(curl -fsS --max-time 10 "$url/health" || true)"
+            echo "attempt $attempt: ${body:-<no response>}"
+            case "$body" in
+              *'"ok"'*'true'*)
+                echo "::notice::Homestead is live at $url"
+                echo "### 🌾 Deployed" >> "$GITHUB_STEP_SUMMARY"
+                echo "" >> "$GITHUB_STEP_SUMMARY"
+                echo "Connector URL: \`$url/mcp/<your-private-farm-key>\`" >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+                ;;
+            esac
+            sleep 5
+          done
+
+          echo "::error::/health did not report ok after 5 attempts"
+          exit 1

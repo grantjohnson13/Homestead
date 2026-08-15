@@ -100,7 +100,7 @@ describe("tab alerts", () => {
     state.customers = [customer({ canFulfill: false, missing: ["2 eggs"] })];
     const h = await mount(state);
 
-    expect(tab(h, "market")?.querySelector(".alert")?.hidden).toBe(false);
+    expect(tab(h, "market")?.querySelector<HTMLElement>(".alert")?.hidden).toBe(false);
   });
 
   it("flags the stock tab when goods are stranded in the barn", async () => {
@@ -111,7 +111,7 @@ describe("tab alerts", () => {
     const h = await mount(state);
 
     // The eggs exist; they are just in the wrong place. That is a restock away.
-    expect(tab(h, "stock")?.querySelector(".alert")?.hidden).toBe(false);
+    expect(tab(h, "stock")?.querySelector<HTMLElement>(".alert")?.hidden).toBe(false);
   });
 
   it("does not flag stock when the farm simply has none", async () => {
@@ -121,7 +121,7 @@ describe("tab alerts", () => {
     state.customers = [customer({ canFulfill: false, missing: ["2 eggs"] })];
     const h = await mount(state);
 
-    expect(tab(h, "stock")?.querySelector(".alert")?.hidden).toBe(true);
+    expect(tab(h, "stock")?.querySelector<HTMLElement>(".alert")?.hidden).toBe(true);
   });
 
   it("flags the invest tab in green when something is affordable", async () => {
@@ -129,7 +129,7 @@ describe("tab alerts", () => {
     state.gold = 100000;
     const h = await mount(state);
 
-    const dot = tab(h, "invest")?.querySelector(".alert");
+    const dot = tab(h, "invest")?.querySelector<HTMLElement>(".alert");
     expect(dot?.hidden).toBe(false);
     expect(dot?.className).toContain("good");
   });
@@ -139,7 +139,7 @@ describe("tab alerts", () => {
     state.gold = 0;
     const h = await mount(state);
 
-    expect(tab(h, "invest")?.querySelector(".alert")?.hidden).toBe(true);
+    expect(tab(h, "invest")?.querySelector<HTMLElement>(".alert")?.hidden).toBe(true);
   });
 
   it("stays quiet on a calm farm", async () => {
@@ -149,7 +149,7 @@ describe("tab alerts", () => {
     const h = await mount(state);
 
     for (const name of ["stock", "market", "invest"]) {
-      expect(tab(h, name)?.querySelector(".alert")?.hidden, name).toBe(true);
+      expect(tab(h, name)?.querySelector<HTMLElement>(".alert")?.hidden, name).toBe(true);
     }
   });
 });

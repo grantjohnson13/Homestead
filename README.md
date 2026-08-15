@@ -53,6 +53,8 @@ crop stages, real animal moods and real customers.
 
 ## Deploying
 
+### By hand
+
 ```bash
 npx wrangler login     # opens a browser to authorise your Cloudflare account
 npm run deploy         # builds the UI and deploys the Worker
@@ -60,14 +62,33 @@ npm run deploy         # builds the UI and deploys the Worker
 
 Wrangler prints the deployed URL, e.g. `https://homestead.<subdomain>.workers.dev`.
 
+### From GitHub Actions
+
+`.github/workflows/deploy.yml` runs the full suite on every push and pull
+request, and deploys to Cloudflare when `main` goes green. It needs two repository
+secrets — **Settings → Secrets and variables → Actions**:
+
+| Secret                  | Where to get it                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`  | Cloudflare dashboard → My Profile → API Tokens → **Edit Cloudflare Workers** template |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → Workers & Pages → **Account ID** in the sidebar                |
+
+The token needs `Account → Workers Scripts → Edit`. Because this Worker uses
+SQLite-backed Durable Objects, it also needs `Account → Durable Objects → Edit` —
+the stock **Edit Cloudflare Workers** template already covers both.
+
+After deploying, the workflow polls `/health` and fails the run if the Worker does
+not answer, so a green check means it is genuinely serving. If your Worker is on a
+custom domain, set a `WORKER_URL` repository **variable** and the smoke test will
+probe that instead of the `workers.dev` URL.
+
 Two things to know:
 
 - The **Durable Object migration** in `wrangler.jsonc` is applied automatically on
   first deploy. It uses SQLite-backed Durable Objects, which are available on the
   free plan.
-- Deployment is the one step that needs credentials only you have. Everything
-  else — the whole game, the tools and the UI — is verified by `npm test`, which
-  runs the real Worker inside `workerd`.
+- Everything except the deploy itself — the whole game, the tools and the UI — is
+  verified by `npm test`, which runs the real Worker inside `workerd`.
 
 Check it is alive:
 
@@ -91,8 +112,11 @@ curl https://<your-worker-url>/health
 
 Your farm lives at whatever key is in the URL, and it persists forever. Pick
 something unguessable — it is the only thing protecting your farm, and **anyone
-who has the URL can play it**. `/mcp` with no key at all drops you into a shared
-public demo farm, which is fine for a quick look and a bad idea for a real save.
+who has the URL can play it**. The key is required: `/mcp` on its own returns
+`404 farm_key_required` rather than serving a farm.
+
+Each distinct key is its own farm, with its own storage, created on first
+contact. That is how several people share one deployment without sharing a save.
 
 This is a deliberate v1 tradeoff (see `DECISIONS.md`); a production-grade version
 would use OAuth instead. If a key ever leaks, `new_farm` gives you a clean slate,

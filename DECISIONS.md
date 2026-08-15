@@ -132,8 +132,25 @@ session per reconnect), so a session ID cannot own a farm. Options considered:
 Tradeoff, stated plainly: the key is a bearer secret in a URL. Anyone with the
 URL owns that farm, and it may leak via logs or shoulder-surfing. Acceptable for
 a single-player cozy farming game with no real-world stakes; a real product would
-use OAuth. `/mcp` with no key maps to a shared `demo` farm for quick trials, and
-the README says so. `new_farm` gives an escape hatch if a key is compromised.
+use OAuth. `new_farm` gives an escape hatch if a key is compromised.
+
+### Revision — the keyless demo farm is gone
+
+Originally `/mcp` with no key mapped to a shared `demo` farm for quick trials.
+That was fine while the only deployment was `wrangler dev` on localhost; it is a
+bad default on a public URL, where it becomes a farm any passer-by can rename,
+sell off or reset, with no way to tell who did.
+
+`normalizeFarmKey` now returns `null` instead of defaulting, and `/mcp` answers
+`404 farm_key_required` with a hint. A farm key is not optional.
+
+The path segment is percent-decoded before normalization. Without that, `/mcp/%20`
+had its `%` stripped and silently resolved to a farm named `20` — a real farm
+reached by a URL carrying no real key. Decoding first means a whitespace-only key
+normalizes to empty and is refused.
+
+The `demo` default survives only for the local `/dev` host page, which addresses
+the farm by an explicit key and never serves `/mcp`.
 
 ### Host theming tokens
 

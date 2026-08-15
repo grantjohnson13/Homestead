@@ -50,7 +50,7 @@ export function landingPage(origin: string): string {
   </ol>
 
   <p>Anyone who knows your URL can play your farm, so pick something unguessable.
-     Visiting <code>/mcp</code> with no key drops you into a shared demo farm.</p>
+     The key is required &mdash; <code>/mcp</code> on its own will not serve a farm.</p>
 
   <p class="note">Your farm keeps running while you are away — crops grow, animals
      produce, and customers come and go for up to two game-hours before the world

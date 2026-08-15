@@ -1,4 +1,5 @@
 import {
+  SELF,
   env,
   evictDurableObject,
   runDurableObjectAlarm,
@@ -67,12 +68,18 @@ describe("Durable Object: persistence", () => {
     expect(b?.wren.name).toBe("Grace");
   });
 
-  it("routes /mcp with no key to the shared demo farm", async () => {
-    await rpc("/mcp", INIT_MESSAGE as unknown as Record<string, unknown>);
-    await callTool("", "rename", { who: "wren", name: "Demo Hand" });
+  it("refuses /mcp with no key instead of serving a shared farm", async () => {
+    // A keyless endpoint would be a farm anyone could edit, on a public URL.
+    for (const path of ["/mcp", "/mcp/", "/mcp/%20"]) {
+      const response = await SELF.fetch(`https://homestead.test${path}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(INIT_MESSAGE),
+      });
 
-    const demo = await runInDurableObject(stubFor("demo"), (i) => i.debugState());
-    expect(demo?.wren.name).toBe("Demo Hand");
+      expect(response.status).toBe(404);
+      expect(await response.json()).toMatchObject({ error: "farm_key_required" });
+    }
   });
 });
 
