@@ -6,6 +6,10 @@ dist/
 .env
 .env.*
 !.env.example
+# Records approved commands verbatim, so it accumulates any token that ever
+# appeared in one. Usually caught by a global ignore; pinned here so the repo
+# does not depend on a machine-level config that clones cannot carry.
+.claude/settings.local.json
 *.log
 .DS_Store
 src/ui/generated/
