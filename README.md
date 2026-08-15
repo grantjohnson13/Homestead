@@ -73,14 +73,24 @@ secrets — **Settings → Secrets and variables → Actions**:
 | `CLOUDFLARE_API_TOKEN`  | Cloudflare dashboard → My Profile → API Tokens → **Edit Cloudflare Workers** template |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → Workers & Pages → **Account ID** in the sidebar                |
 
-The token needs `Account → Workers Scripts → Edit`. Because this Worker uses
-SQLite-backed Durable Objects, it also needs `Account → Durable Objects → Edit` —
-the stock **Edit Cloudflare Workers** template already covers both.
+The stock **Edit Cloudflare Workers** template is exactly right — no permissions
+need adding. There is no separate Durable Objects permission to grant: the DO
+migration ships as part of the script upload, which `Workers Scripts → Edit`
+already covers. Scope the token to your own account rather than "All accounts".
 
 After deploying, the workflow polls `/health` and fails the run if the Worker does
 not answer, so a green check means it is genuinely serving. If your Worker is on a
 custom domain, set a `WORKER_URL` repository **variable** and the smoke test will
 probe that instead of the `workers.dev` URL.
+
+Two things that only bite on the **very first** deploy to a fresh account:
+
+- The account needs a `workers.dev` subdomain before anything can publish there.
+  Opening **Compute → Workers & Pages** in the dashboard once creates it
+  automatically; until then `wrangler deploy` fails asking you to register one.
+- A brand-new subdomain has no TLS certificate for a minute or two, and until it
+  is issued the smoke test cannot complete a handshake at all. The workflow waits
+  up to three minutes for this. Later deploys answer immediately.
 
 Two things to know:
 

@@ -72,7 +72,11 @@ jobs:
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       # A green check should mean "it is serving", not "the upload succeeded".
-      # A fresh deploy can take a moment to propagate, hence the retries.
+      #
+      # The window is generous because the very first deploy to a brand-new
+      # workers.dev subdomain has to wait for Cloudflare to issue its TLS
+      # certificate, and until it does curl fails the handshake outright rather
+      # than returning any status. Later deploys pass on the first attempt.
       - name: Smoke test /health
         shell: bash
         run: |
@@ -83,20 +87,28 @@ jobs:
           fi
 
           echo "Probing $url/health"
-          for attempt in 1 2 3 4 5; do
-            body="$(curl -fsS --max-time 10 "$url/health" || true)"
-            echo "attempt $attempt: ${body:-<no response>}"
+          for attempt in $(seq 1 12); do
+            body="$(curl -fsS --max-time 10 "$url/health" 2>&1 || true)"
             case "$body" in
               *'"ok"'*'true'*)
+                echo "attempt $attempt: $body"
                 echo "::notice::Homestead is live at $url"
-                echo "### 🌾 Deployed" >> "$GITHUB_STEP_SUMMARY"
-                echo "" >> "$GITHUB_STEP_SUMMARY"
-                echo "Connector URL: \`$url/mcp/<your-private-farm-key>\`" >> "$GITHUB_STEP_SUMMARY"
+                {
+                  echo "### 🌾 Deployed"
+                  echo ""
+                  echo "Connector URL: \`$url/mcp/<your-private-farm-key>\`"
+                } >> "$GITHUB_STEP_SUMMARY"
                 exit 0
                 ;;
+              *handshake*|*SSL*)
+                echo "attempt $attempt: TLS not ready yet (certificate still being issued)"
+                ;;
+              *)
+                echo "attempt $attempt: ${body:-<no response>}"
+                ;;
             esac
-            sleep 5
+            sleep 15
           done
 
-          echo "::error::/health did not report ok after 5 attempts"
+          echo "::error::/health did not report ok after 12 attempts (3 minutes)"
           exit 1
