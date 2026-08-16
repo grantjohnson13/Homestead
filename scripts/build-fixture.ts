@@ -5,6 +5,10 @@
  * simulation for a while, so the fixture shows a farm that could really exist —
  * crops at different stages, animals with real moods, customers mid-wait.
  *
+ * It ships a *run* rather than a single frame, because half of what the view
+ * does only exists between two states: Wren walking, coins off a sale, a crop
+ * popping as it is picked. A still image cannot show any of it.
+ *
  * Output: dist/farm-view-fixture.html  (open it in any browser)
  */
 
@@ -15,13 +19,15 @@ import {
   addAnimal,
   addItem,
   advance,
+  buySupplies,
+  buyUpgrade,
   createFarm,
   nextId,
   validateBatch,
   type FarmState,
   type TaskInput,
 } from "../src/sim/index.ts";
-import { snapshot } from "../src/tools/snapshot.ts";
+import { snapshot, type FarmSnapshot } from "../src/tools/snapshot.ts";
 import { buildFarmViewHtml } from "./build-ui.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -101,23 +107,76 @@ function stagedFarm(): FarmState {
   return farm;
 }
 
-function main(): void {
+/** Game-minutes between captured frames, matching the view's normal 2s poll. */
+const FRAME_MINUTES = 2;
+const FRAME_COUNT = 150;
+
+/**
+ * Plays the staged farm forward, capturing what the view would have polled.
+ *
+ * Two purchases are staged partway in — supplies and an upgrade — because
+ * spending is otherwise the one economic move the simulation never makes on its
+ * own, and it has its own animation to check.
+ */
+function timeline(): FarmSnapshot[] {
   const farm = stagedFarm();
-  const state = snapshot(farm);
+  const frames: FarmSnapshot[] = [snapshot(farm)];
+
+  for (let i = 0; i < FRAME_COUNT; i++) {
+    if (i === 20) buySupplies(farm, "tomato_seed", 5);
+    if (i === 45) buyUpgrade(farm, "watering_can");
+    advance(farm, FRAME_MINUTES);
+    frames.push(snapshot(farm));
+  }
+
+  return frames;
+}
+
+/** How many of the frames show money changing hands, for the build log. */
+function countSales(frames: FarmSnapshot[]): number {
+  let sales = 0;
+  for (let i = 1; i < frames.length; i++) {
+    const before = new Set(frames[i - 1]!.customers.map((c) => c.id));
+    for (const id of frames[i]!.customers.map((c) => c.id)) before.delete(id);
+    sales += before.size;
+  }
+  return sales;
+}
+
+function main(): void {
+  const frames = timeline();
+  const first = frames[0]!;
+  const last = frames[frames.length - 1]!;
   const html = buildFarmViewHtml();
 
   const injection = `
 <script>
-  // Standalone preview: there is no MCP host here, so feed the renderer directly.
+  // Standalone preview: there is no MCP host here, so feed the renderer the
+  // recorded run directly, one frame per poll, looping forever.
   (function () {
-    var STATE = ${JSON.stringify(state).replace(/</g, "\\u003c")};
+    var FRAMES = ${JSON.stringify(frames).replace(/</g, "\\u003c")};
+    var FRAME_MS = 1400;
+    var at = 0;
+
     function paint() {
-      if (window.__homesteadRender) {
-        window.__homesteadRender(STATE);
-      } else {
+      if (!window.__homesteadRender) {
         setTimeout(paint, 30);
+        return;
       }
+      window.__homesteadRender(FRAMES[at]);
+      at++;
+      if (at >= FRAMES.length) {
+        // Restart from a clean slate, so the loop point is not read as one
+        // enormous change to every number at once.
+        at = 0;
+        setTimeout(function () {
+          location.reload();
+        }, 2500);
+        return;
+      }
+      setTimeout(paint, FRAME_MS);
     }
+
     paint();
   })();
 </script>
@@ -129,10 +188,13 @@ function main(): void {
   const outFile = join(outDir, "farm-view-fixture.html");
   writeFileSync(outFile, fixture, "utf8");
 
+  const kb = (Buffer.byteLength(fixture, "utf8") / 1024).toFixed(0);
   process.stdout.write(
-    `build-fixture: wrote ${outFile}\n` +
-      `  clock ${state.clock}m, ${state.gold}g, rep ${state.reputation}, ` +
-      `${state.customers.length} customer(s), ${state.animals.length} animal(s)\n`,
+    `build-fixture: wrote ${outFile} (${kb} kB)\n` +
+      `  ${frames.length} frames over ${FRAME_COUNT * FRAME_MINUTES} game-minutes, ` +
+      `${countSales(frames)} customer departure(s)\n` +
+      `  ${first.gold}g → ${last.gold}g, rep ${first.reputation} → ${last.reputation}, ` +
+      `${last.animals.length} animal(s)\n`,
   );
 }
 
