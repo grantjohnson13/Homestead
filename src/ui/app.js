@@ -217,8 +217,13 @@
 
   function setFarm(next) {
     var first = farm === null;
+    // Work out what changed *before* adopting the new state: the animation layer
+    // has no other way to know a sale happened (see "Juice" below).
+    recent = first ? null : diffFarms(farm, next);
     farm = next;
     render(first);
+    playFx(recent);
+    recent = null;
     markFresh();
   }
 
@@ -279,6 +284,7 @@
     if (pollTimer) clearTimeout(pollTimer);
     pollTimer = null;
     pending.clear();
+    clearFx();
   }
 
   function log() {
@@ -381,12 +387,22 @@
 
     var plotLayer = svg("g", { id: "plots" });
     var actorLayer = svg("g", { id: "actors" });
+    // Effects sit above the farm but below the hit areas, so a coin flying past
+    // never steals the hover from the tile underneath it.
+    var fxLayer = svg("g", { id: "fx-board", "pointer-events": "none" });
     var hitLayer = svg("g", { id: "hits" });
     board.appendChild(plotLayer);
     board.appendChild(actorLayer);
+    board.appendChild(fxLayer);
     board.appendChild(hitLayer);
 
-    return { board: board, plots: plotLayer, actors: actorLayer, hits: hitLayer };
+    return {
+      board: board,
+      plots: plotLayer,
+      actors: actorLayer,
+      fx: fxLayer,
+      hits: hitLayer,
+    };
   }
 
   /* =====================================================================
@@ -395,6 +411,13 @@
 
   var layers = null;
   var actorNodes = new Map();
+
+  /**
+   * What changed between the last snapshot and the one being drawn, or null on
+   * the very first render. Set by setFarm for the duration of one render pass;
+   * the renderers read it to decide what should arrive with a flourish.
+   */
+  var recent = null;
 
   var CROP_SYMBOL = {
     radish: "c-radish",
@@ -504,7 +527,15 @@
     var cx = origin.x * TILE + TILE;
     var cy = origin.y * TILE - 2;
 
-    var badge = svg("circle", { class: "stand-badge", cx: cx, cy: cy, r: 6.5 });
+    // Goods arriving or leaving the counter pops the badge, so a restock and a
+    // sale are both visible without watching the number itself.
+    var changed = !!(recent && recent.standTotal !== 0) && !reducedMotion();
+    var badge = svg("circle", {
+      class: "stand-badge" + (changed ? " pop" : ""),
+      cx: cx,
+      cy: cy,
+      r: 6.5,
+    });
     var label = svg("text", {
       class: "stand-count",
       x: cx,
@@ -524,6 +555,8 @@
   function renderActors(isFirst) {
     var seen = new Set();
     var moveMs = pollInterval();
+    // Somebody turning up mid-game is worth a flourish; the opening cast is not.
+    popNewActors = !isFirst && recent !== null && !reducedMotion();
 
     // --- Wren ---
     var wren = farm.wren;
@@ -706,6 +739,8 @@
     renderHits();
   }
 
+  var popNewActors = false;
+
   function ensureActor(key, create) {
     var node = actorNodes.get(key);
     if (!node) {
@@ -713,6 +748,12 @@
       actorNodes.set(key, node);
       layers.actors.appendChild(node);
       node.dataset.fresh = "1";
+      if (popNewActors) {
+        node.classList.add("pop");
+        fxTimeout(function () {
+          node.classList.remove("pop");
+        }, 520);
+      }
     }
     return node;
   }
@@ -751,6 +792,369 @@
         ];
     var offset = offsets[index % offsets.length];
     return { x: origin.x + offset[0], y: origin.y + offset[1] };
+  }
+
+  /* =====================================================================
+     Juice — the animation layer
+     =====================================================================
+
+     Money is the whole game, and until now it moved in silence: a customer
+     simply vanished and the gold counter read a different number. Everything
+     below exists to make earning and spending *land* — coins off a sale, a
+     number lifting off the HUD, a row lighting up when an investment levels.
+
+     Two rules hold it together:
+
+     1. Effects are inferred, never announced. The farm is server-authoritative
+        and the view only ever sees before-and-after snapshots, so "a sale
+        happened" means: someone who was at the stand last poll is gone this
+        poll, and no lost-sale record explains their leaving.
+
+     2. Effects are decoration only. If every animation here failed to run, the
+        view would still be correct — nothing in this section decides what is
+        drawn, only how it arrives.
+  */
+
+  /** Compares two snapshots and reports everything worth celebrating. */
+  function diffFarms(before, after) {
+    var change = {
+      gold: after.gold - before.gold,
+      reputation: after.reputation - before.reputation,
+      /** Customers who left with a basket: {x, y, price, name}. */
+      sales: [],
+      /** Customers who left empty-handed: {x, y}. */
+      walkouts: [],
+      /** Plots picked since the last look: {x, y, crop}. */
+      harvests: [],
+      /** Upgrade ids that gained a level, as a set-shaped object. */
+      upgrades: {},
+      /** Per-good change on the stand and in the barn. */
+      stand: {},
+      barn: {},
+      standTotal: 0,
+      animals: after.animals.length - before.animals.length,
+      certificate: after.certificates.length > before.certificates.length,
+    };
+
+    var stillHere = {};
+    after.customers.forEach(function (customer) {
+      stillHere[customer.id] = true;
+    });
+
+    // A walkout is the one departure the farm writes down. Anyone else who left
+    // between polls left because they were served.
+    var walkedOut = freshLostSales(before.lostSales, after.lostSales);
+    before.customers.forEach(function (customer) {
+      if (stillHere[customer.id]) return;
+      if (walkedOut[customer.name] > 0) {
+        walkedOut[customer.name]--;
+        change.walkouts.push({ x: customer.x, y: customer.y });
+      } else {
+        change.sales.push({
+          x: customer.x,
+          y: customer.y,
+          // What the view was quoting them, which is what they paid on every
+          // path except a hand-struck deal below the list price.
+          price: customer.yourPrice,
+          name: customer.name,
+        });
+      }
+    });
+
+    var was = {};
+    before.plots.forEach(function (plot) {
+      was[plot.id] = plot;
+    });
+    after.plots.forEach(function (plot) {
+      var old = was[plot.id];
+      if (old && old.crop && old.status === "ready" && plot.status !== "ready") {
+        change.harvests.push({ x: plot.x, y: plot.y, crop: old.crop });
+      }
+    });
+
+    var levels = {};
+    (before.upgrades || []).forEach(function (entry) {
+      levels[entry.id] = entry.level;
+    });
+    (after.upgrades || []).forEach(function (entry) {
+      if (levels[entry.id] !== undefined && entry.level > levels[entry.id]) {
+        change.upgrades[entry.id] = true;
+      }
+    });
+
+    change.stand = bagDelta(before.stand, after.stand);
+    change.barn = bagDelta(before.inventory, after.inventory);
+    Object.keys(change.stand).forEach(function (good) {
+      change.standTotal += change.stand[good];
+    });
+
+    return change;
+  }
+
+  /** Per-key difference between two count bags, keeping only what moved. */
+  function bagDelta(before, after) {
+    var delta = {};
+    var goods = {};
+    Object.keys(before || {}).forEach(function (id) {
+      goods[id] = true;
+    });
+    Object.keys(after || {}).forEach(function (id) {
+      goods[id] = true;
+    });
+    Object.keys(goods).forEach(function (id) {
+      var moved = ((after && after[id]) || 0) - ((before && before[id]) || 0);
+      if (moved !== 0) delta[id] = moved;
+    });
+    return delta;
+  }
+
+  /**
+   * Lost sales that appeared since the last snapshot, tallied by customer name.
+   *
+   * The log is capped and slides, so "new" cannot mean "past the old length" —
+   * it means "not accounted for by an entry we had already seen".
+   */
+  function freshLostSales(before, after) {
+    var seen = {};
+    (before || []).forEach(function (lost) {
+      var key = lostKey(lost);
+      seen[key] = (seen[key] || 0) + 1;
+    });
+
+    var fresh = {};
+    (after || []).forEach(function (lost) {
+      var key = lostKey(lost);
+      if (seen[key] > 0) {
+        seen[key]--;
+        return;
+      }
+      fresh[lost.customer] = (fresh[lost.customer] || 0) + 1;
+    });
+    return fresh;
+  }
+
+  function lostKey(lost) {
+    return lost.at + "|" + lost.customer + "|" + lost.wanted;
+  }
+
+  /* ------------------------------------------------------------- playback -- */
+
+  function reducedMotion() {
+    return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+
+  /** Effects at most this far apart still read as one event rather than a storm. */
+  var FX_BURST_LIMIT = 3;
+
+  function playFx(change) {
+    if (!change || !layers || reducedMotion()) return;
+
+    if (change.gold !== 0) {
+      bumpStat("stat-gold");
+      floatFromStat("stat-gold", signed(change.gold) + "g", change.gold > 0 ? "gain" : "spend");
+    }
+
+    if (change.reputation !== 0) {
+      bumpStat("stat-rep");
+      floatFromStat(
+        "stat-rep",
+        signed(change.reputation) + "★",
+        change.reputation > 0 ? "rep" : "spend",
+      );
+    }
+
+    if (change.sales.length > 0) {
+      flashTab("market");
+      if (change.sales.length <= FX_BURST_LIMIT) {
+        change.sales.forEach(function (sale) {
+          coinBurst(sale.x, sale.y, 5);
+          boardFloat(sale.x, sale.y, "+" + sale.price + "g", "gain");
+        });
+      } else {
+        // A rush at 360x would otherwise bury the board in coins. Collapse it
+        // into one takings-shaped burst over the stand.
+        var stand = buildingOrigin("S");
+        var takings = change.sales.reduce(function (sum, sale) {
+          return sum + sale.price;
+        }, 0);
+        if (stand) {
+          coinBurst(stand.x + 0.5, stand.y, 8);
+          boardFloat(stand.x + 0.5, stand.y, "+" + takings + "g", "gain");
+        }
+      }
+    }
+
+    change.walkouts.slice(0, FX_BURST_LIMIT).forEach(function (gone) {
+      puff(gone.x, gone.y);
+    });
+
+    change.harvests.slice(0, 6).forEach(function (picked) {
+      cropPop(picked.x, picked.y, picked.crop);
+    });
+
+    if (Object.keys(change.upgrades).length > 0) flashTab("invest");
+    if (change.certificate) celebrateCertificate();
+  }
+
+  /** "+12" / "−40", using a real minus sign rather than a hyphen. */
+  function signed(value) {
+    return (value > 0 ? "+" : "−") + Math.abs(value);
+  }
+
+  /* -------------------------------------------------------------- HUD fx -- */
+
+  /*
+    One float per stat at a time. At high speed sales land faster than a float
+    fades, and a stack of half-transparent numbers is worse than no number.
+  */
+  var floatsByStat = new Map();
+
+  function floatFromStat(statId, text, variant) {
+    var host = document.getElementById("fx");
+    var anchor = document.getElementById(statId);
+    if (!host || !anchor) return;
+
+    var inFlight = floatsByStat.get(statId);
+    if (inFlight) inFlight.remove();
+
+    // Hung below the pill rather than above it: the HUD is already against the
+    // top of the page, so a number rising off it would be clipped away in the
+    // half-second it is most readable.
+    var box = anchor.getBoundingClientRect();
+    var node = el("span", "fx-float " + variant, text);
+    node.style.left = box.left + box.width / 2 + "px";
+    node.style.top = box.bottom + "px";
+    host.appendChild(node);
+    floatsByStat.set(statId, node);
+
+    fxTimeout(function () {
+      node.remove();
+      if (floatsByStat.get(statId) === node) floatsByStat.delete(statId);
+    }, 1200);
+  }
+
+  /** A quick swell of the whole stat pill, so the eye is pulled to the number. */
+  function bumpStat(statId) {
+    var anchor = document.getElementById(statId);
+    var pill = anchor && anchor.parentElement;
+    if (!pill) return;
+    restartAnimation(pill, "bumped", 520);
+  }
+
+  function flashTab(name) {
+    var button = document.querySelector('.tab[data-tab="' + name + '"]');
+    if (button) restartAnimation(button, "flash", 1000);
+  }
+
+  function celebrateCertificate() {
+    var badge = document.getElementById("cert");
+    if (badge) restartAnimation(badge, "won", 1600);
+  }
+
+  /**
+   * Re-triggers a CSS animation on an element that may already be mid-flash.
+   * Removing the class and reading layout back is the only reliable way to make
+   * the browser start the animation over rather than ignore the second add.
+   */
+  function restartAnimation(node, className, ms) {
+    node.classList.remove(className);
+    void node.getBoundingClientRect();
+    node.classList.add(className);
+    fxTimeout(function () {
+      node.classList.remove(className);
+    }, ms);
+  }
+
+  /* ------------------------------------------------------------ board fx -- */
+
+  function coinBurst(tileX, tileY, count) {
+    var cx = tileX * TILE + TILE / 2;
+    var cy = tileY * TILE + TILE / 2;
+
+    for (var i = 0; i < count; i++) {
+      var coin = useSprite("ic-coin", cx - 6, cy - 6, 12);
+      coin.setAttribute("class", "fx-coin");
+      // Fan the coins out around the spot they were earned, with a little
+      // scatter so two sales never look like the same stamp.
+      var spread = (i - (count - 1) / 2) * 5 + (Math.random() * 4 - 2);
+      coin.style.setProperty("--dx", spread.toFixed(1) + "px");
+      coin.style.setProperty("--dy", (-16 - Math.random() * 10).toFixed(1) + "px");
+      coin.style.animationDelay = i * 45 + "ms";
+      layers.fx.appendChild(coin);
+      removeAfter(coin, 1000 + i * 45);
+    }
+  }
+
+  function boardFloat(tileX, tileY, text, variant) {
+    var node = svg("text", {
+      class: "fx-text " + variant,
+      x: tileX * TILE + TILE / 2,
+      y: tileY * TILE - 3,
+      "text-anchor": "middle",
+    });
+    node.textContent = text;
+    layers.fx.appendChild(node);
+    removeAfter(node, 1300);
+  }
+
+  /** The grey little nothing left behind by a customer who gave up. */
+  function puff(tileX, tileY) {
+    var node = svg("circle", {
+      class: "fx-puff",
+      cx: tileX * TILE + TILE / 2,
+      cy: tileY * TILE + TILE / 2,
+      r: 6,
+    });
+    layers.fx.appendChild(node);
+    removeAfter(node, 800);
+  }
+
+  /** The crop itself lifting off the plot as it is picked. */
+  function cropPop(tileX, tileY, crop) {
+    var node = useSprite(CROP_SYMBOL[crop] || "c-growing", tileX * TILE, tileY * TILE, TILE);
+    node.setAttribute("class", "fx-harvest");
+    layers.fx.appendChild(node);
+    removeAfter(node, 900);
+
+    var spark = useSprite("fx-sparkle", tileX * TILE + 6, tileY * TILE - 2, 14);
+    spark.setAttribute("class", "fx-harvest");
+    layers.fx.appendChild(spark);
+    removeAfter(spark, 900);
+  }
+
+  /* ------------------------------------------------------------- lifetime -- */
+
+  /*
+    Every effect removes itself on a timer rather than on animationend: the
+    iframe can be torn down mid-flight, and an effect that only cleans up when
+    its animation finishes would outlive the view that owns it.
+  */
+  var fxTimers = new Set();
+
+  function fxTimeout(fn, ms) {
+    var id = setTimeout(function () {
+      fxTimers.delete(id);
+      fn();
+    }, ms);
+    fxTimers.add(id);
+    return id;
+  }
+
+  function removeAfter(node, ms) {
+    fxTimeout(function () {
+      node.remove();
+    }, ms);
+  }
+
+  function clearFx() {
+    fxTimers.forEach(function (id) {
+      clearTimeout(id);
+    });
+    fxTimers.clear();
+    floatsByStat.clear();
+    if (layers) layers.fx.textContent = "";
+    var host = document.getElementById("fx");
+    if (host) host.textContent = "";
   }
 
   /* =====================================================================
@@ -1211,7 +1615,7 @@
     var barn = farm.inventory || {};
 
     fillChips("stand-stock", stand, "Nothing on the stand", function (good) {
-      return wanted[good] ? "wanted" : "";
+      return join(wanted[good] ? "wanted" : "", moved("stand", good));
     });
 
     // Only goods are worth showing in the barn; seeds and feed are supplies.
@@ -1222,8 +1626,23 @@
 
     fillChips("barn-stock", barnGoods, "Barn is empty", function (good) {
       var short = (wanted[good] || 0) - (stand[good] || 0);
-      return short > 0 ? "needed" : "";
+      return join(short > 0 ? "needed" : "", moved("barn", good));
     });
+  }
+
+  /**
+   * Whether a good's count went up or down since the last look, so a chip can
+   * announce itself. Stock arriving and stock selling are the two halves of the
+   * loop, and a number quietly changing shows neither.
+   */
+  function moved(bag, good) {
+    if (!recent || reducedMotion()) return "";
+    var delta = recent[bag][good] || 0;
+    return delta > 0 ? "bump" : delta < 0 ? "drop" : "";
+  }
+
+  function join(a, b) {
+    return [a, b].filter(Boolean).join(" ");
   }
 
   function fillChips(elementId, bag, emptyText, classFor) {
@@ -1295,10 +1714,16 @@
     list.forEach(function (entry) {
       var maxed = entry.nextCost === null;
       var affordable = !maxed && farm.gold >= entry.nextCost;
+      // Just bought. The row is rebuilt every render, so the class alone
+      // replays the flash — no need to restart anything by hand.
+      var levelled = !!(recent && recent.upgrades[entry.id]) && !reducedMotion();
 
       var row = el(
         "div",
-        "upgrade" + (entry.owned ? " owned" : "") + (!entry.owned && !affordable ? " locked" : ""),
+        "upgrade" +
+          (entry.owned ? " owned" : "") +
+          (!entry.owned && !affordable ? " locked" : "") +
+          (levelled ? " levelup" : ""),
       );
       row.appendChild(glyph(entry.icon, true));
 
@@ -1308,7 +1733,15 @@
       // with it for width and the name truncated to "Bigg…".
       var pips = el("span", "pips");
       for (var i = 0; i < entry.maxLevel; i++) {
-        pips.appendChild(el("span", "pip" + (i < entry.level ? " on" : "")));
+        // The pip that just lit up pops, so the level gained is the thing you
+        // see rather than something you have to count.
+        var lit = i < entry.level;
+        pips.appendChild(
+          el(
+            "span",
+            "pip" + (lit ? " on" : "") + (levelled && i === entry.level - 1 ? " fresh" : ""),
+          ),
+        );
       }
       pips.appendChild(el("span", "level", entry.level + "/" + entry.maxLevel));
       body.appendChild(pips);

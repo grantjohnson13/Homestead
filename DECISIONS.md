@@ -456,3 +456,59 @@ sold anything by then. The three profiles are therefore asserted at 30 minutes
 only for what is observable there — nobody goes into debt, nobody loses
 reputation, Wren is still standing — and the economic claims are asserted at 600
 minutes where they can actually be seen.
+
+## 2026-08-16 — the animation layer
+
+### Money moved in silence, so the loop had no payoff
+
+Earning was the least visible thing in the game. A customer at the stand simply
+stopped existing between two polls, and the gold counter read a different
+number — no moment of sale, nothing to make the next decision feel earned. The
+whole point of a price list is watching it work, and the view was hiding it.
+
+So there is now a juice layer: coins off a sale, the takings written over the
+spot they were earned, gained and spent numbers floating off the HUD counters,
+a crop popping as it is picked, stock chips reacting as the counter fills and
+empties, and an investment row lighting up with the pip it just bought.
+
+### Effects are inferred from two snapshots, not announced
+
+The view is server-authoritative and stateless between polls, so nothing tells
+it that a sale happened. It works it out: someone who was at the stand last poll
+is gone this poll, and no new lost-sale record explains their leaving, so they
+left with a basket. That single inference drives the sale animation, and getting
+it backwards would throw coins for a customer you had just lost — which is why
+it is the most thoroughly tested part of `test/ui/juice.test.ts`.
+
+The lost-sale log is capped and slides, so "new" cannot mean "past the previous
+length". It means "not accounted for by an entry already seen", tallied as a
+multiset.
+
+Two things fall out of the design and are worth stating:
+
+- **Amounts are net, not per-event.** At 60x or 360x a poll spans many sales and
+  purchases, and the HUD float shows what the tin actually did. A rush of more
+  than three departures collapses into one burst over the stand rather than
+  burying the board in coins.
+- **A sale price is what the view was quoting.** That is exact on every path
+  except a hand-struck `sell_to_customer` deal below the list price, where the
+  board float is optimistic by the discount. The HUD float remains the truth.
+
+### Nothing in the layer may decide what is drawn
+
+Every effect is decoration: if none of it ran, the view would still be correct.
+That is what makes it safe to switch off wholesale for `prefers-reduced-motion`,
+which the script honours by declining to create the effects at all rather than
+by animating them to nothing.
+
+Effects clean themselves up on a timer rather than on `animationend`, because
+the host can tear the iframe down mid-flight and an effect waiting on an
+animation that will never finish would outlive the view that owns it.
+
+### The fixture had to become a run, not a still
+
+`scripts/build-fixture.ts` rendered one snapshot, which could not show any of
+this — half of what the view does only exists between two states. It now records
+a played timeline and replays it frame by frame, so the animations can actually
+be watched in a browser. Two purchases are staged into the run because spending
+is the one economic move the simulation never makes on its own.
